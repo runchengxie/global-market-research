@@ -110,3 +110,22 @@ Linux CI 运行纯 Python 契约测试，专门的 Windows CI 还使用临时假
 `competition.paper_read_verification.v1` 报告分别记录 `api`、`account_prefix`、`contract`、`historical`、`intended_read_only` 和 `server_read_only`，附 UTC 检查时间及稳定错误码，不含账户 ID、路径或 SDK 原始错误。可选的 `--ini-file` 检查仅允许所有者访问且不经过重解析路径的 IBC 配置，报告预期只读设置。服务端只读始终为 `not_verified`，命令不会通过下单验证。退出码 0 表示请求的检查未发现阻断问题，不表示所有可选检查或服务端检查都已验证。退出码 2 表示检查受阻或输入无效。指定的输出目录必须位于源码外且尚不存在，报告写入其中的 `verification.json`。命令不会启动、重启 Gateway 或登录账户。
 
 受保护的 SDK 会话串行运行，从连接到断开期间暂时关闭标准 Python 日志，结束后恢复原状态，避免单独配置的 SDK 子日志处理器输出敏感记录。嵌入式调用方应避免在此期间并发记录无关日志。
+
+## Linux 单次启动器
+
+Linux 使用独立的纯标准库启动器，上述 Windows 工具保持不变。在源码外安装离线 Gateway 10.50 和原始 Linux IBC 3.24.2。IBC 已归档，真实兼容性仍需有人监督的 Paper 验证。启动器直接调用 IBC 的 Java 入口，保留官方安装，避开上游 shell 脚本的重命名和重启循环；使用 Gateway 自带 Java，不需要系统 Java 或 xterm。
+
+将 [linux-launcher.example.json](../../config/ibgateway-paper/linux-launcher.example.json) 复制到私人部署目录，填写源码外的绝对路径。沿用私人 INI，保持 `TradingMode=paper`、`ReadOnlyApi=yes`，二次认证和已有会话由人处理。在本地按 Java Properties 语法填写 `IbLoginId`、`IbPassword`，不要把凭据放进 JSON、命令行、Git 或聊天。部署容器、设置目录、日志容器及日志仅所有者可访问（目录 `0700`、私人文件 `0600`）。工具文件须属于当前用户，其他用户或组不可写。符号链接路径和源码内路径会被拒绝。每层上级目录须属于当前用户或 root，且其他用户或组不可写；root 所有且带 sticky bit 的系统临时目录除外。不安全的共享上层目录会阻止部署，不应静默修改其权限。
+
+创建仅所有者可访问的 `tools-manifest.json`：JSON 对象的键为已安装文件的绝对路径，值为经审查的 SHA256。至少覆盖 Gateway JAR、`.install4j/i4jruntime.jar`、`.install4j/i4jparams.conf`、`ibgateway.vmoptions`、`jre/bin/java`、`IBC.jar`；另保留含 Java 库的完整安装文件清单。本地摘要只能检测后续变更，不等于发布方身份验证；需使用可信官方下载并单独审查来源。清单本身是受信任私人配置。原始发布包和许可记录保留在源码外。
+
+```sh
+python -m competition_tools.linux_gateway_launcher check --config /absolute/private/deployment/launcher.json
+python -m competition_tools.linux_gateway_launcher dry-run --config /absolute/private/deployment/launcher.json
+```
+
+两条命令只读取文件和进程名称，不打开 socket、不创建子进程、不写配置、不认证。输出不含 INI 值或 Java 参数。`preflight_passed` 仅说明本地前提通过。已有 Java/Gateway 进程、启动锁或非空设置目录都会阻止检查。初版刻意要求全新的独立设置目录，不是持久重连或每日重启服务。不要自动清空已有设置或结束无关会话来通过检查。
+
+真实登录需要另行明确授权、已登录桌面（`DISPLAY`）以及私人 JSON 中的 `activation_authorized=true`。显式 `start` 获取独占 `launch.lease`，重新检查后仅启动一次，排除继承的 Java 参数注入环境变量，输出只写入私有任务日志。30–300 秒观察超时返回退出码 3，不结束或重试子进程，并保留启动锁；中断或状态不明时同样保留。先检查桌面、进程和私人日志，再人工处理旧锁，不能盲目重试。子进程正常退出后释放锁并报告退出码。进程运行或正常退出不代表认证成功。
+
+不提供自启、计划任务、自动重启、凭据迁移或下单调用。有人监督的登录步骤获准前保留 `activation_authorized=false`。登录后使用独立的[只读验收](#只读验收)，服务端只读设置仍需在界面确认，不通过下单测试。

@@ -1,0 +1,11 @@
+{
+  "schema_version": "competition.linux_gateway.v1",
+  "gateway_directory": "/absolute/owner/tools/ibgateway",
+  "ibc_directory": "/absolute/owner/tools/ibc-3.24.2",
+  "ini_path": "/absolute/private/deployment/ibc.ini",
+  "settings_directory": "/absolute/private/deployment/settings",
+  "log_directory": "/absolute/data/project/operations/private-task/logs",
+  "manifest_path": "/absolute/private/deployment/tools-manifest.json",
+  "activation_authorized": false,
+  "timeout_seconds": 120
+}
