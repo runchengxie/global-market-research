@@ -10,6 +10,10 @@ $env:UV_PROJECT_ENVIRONMENT = Join-Path $env:DATA_ROOT "2026-quant-competition/e
 
 ## Python 检查
 
+2026-11-05 的依赖维护使用 Python 3.12、uv 0.13.7 和 Node 24。Python 锁文件在现有约束内更新，CI 动作固定到官方发布提交。网站使用 Astro 7.4.5 和 markdown-remark 7.3.5。
+
+预测实验继续精确固定 exchange-calendars 4.13.2、PyArrow 23.0.1、scikit-learn 1.7.2 和 threadpoolctl 3.6.0。根项目日频数据的日历版本、日频及股票研究的 pandas `<3`、crypto 的 Polars `<1.43` 约束也保持不变，以保留现有实验和记账假设；修改这些约束需要单独审查科学兼容性。依赖检查使用合成夹具，不代表复现了历史研究，也不证明券商连接可用。
+
 项目使用 Python 3.12 和已提交的 `uv.lock`。GitHub Actions 会检查代码、运行测试、编译 Python 文件，并扫描完整 Git 历史中的密钥泄露。这些检查不会连接数据服务或 IB Gateway。
 
 ```powershell

@@ -9,6 +9,10 @@ $env:UV_PROJECT_ENVIRONMENT = Join-Path $env:DATA_ROOT "2026-quant-competition/e
 ```
 ## Python checks
 
+The 2026-11-05 dependency refresh uses Python 3.12, uv 0.13.7 and Node 24. Python locks advance within the existing package constraints; CI actions use official release commit pins. The website uses Astro 7.4.5 and markdown-remark 7.3.5.
+
+The predictive experiment keeps its exact exchange-calendars 4.13.2, PyArrow 23.0.1, scikit-learn 1.7.2 and threadpoolctl 3.6.0 pins. The root daily-data calendar, pandas `<3` in daily/equity research, and crypto Polars `<1.43` constraints also remain. These preserve existing experiment and accounting assumptions; changing them needs a separate scientific compatibility review. Dependency checks use synthetic fixtures and do not reproduce historical research or establish broker readiness.
+
 The GitHub Actions workflow uses Python 3.12 and the committed `uv.lock` to run Ruff, the test suite, bytecode compilation, and a full-history secret scan. It does not connect to provider APIs or IB Gateway.
 
 ```powershell
