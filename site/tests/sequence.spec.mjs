@@ -19,3 +19,16 @@ for (const locale of ['en','zh-CN']) {
   await context.close();
  });
 }
+
+for (const locale of ['en','zh-CN']) {
+ test(`${locale}: sequence chart stays contained when resize observers are delayed`,async({page})=>{
+  await page.addInitScript(()=>{window.ResizeObserver=class {observe(){} disconnect(){} unobserve(){}};});
+  await page.setViewportSize({width:1360,height:1000});
+  await page.goto(`/global-market-research/${locale==='en'?'':'zh-CN/'}research/lstm-moe/`);
+  await page.locator('[data-load]').click();
+  await expect(page.locator('[data-plot] canvas')).toBeVisible();
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await expect.poll(()=>page.locator('[data-plot]').evaluate(node=>Math.abs(node.querySelector('canvas').getBoundingClientRect().width-node.clientWidth)<2)).toBe(true);
+ });
+}
