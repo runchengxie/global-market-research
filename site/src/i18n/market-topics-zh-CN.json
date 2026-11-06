@@ -56,5 +56,7 @@
   "statusLabel": "研究状态",
   "statusExploratory": "探索中",
   "statusPending": "待补充检验",
-  "statusHistorical": "历史实验待核实"
+  "statusHistorical": "历史实验待核实",
+  "sequenceTitle": "LSTM 与专家路由",
+  "sequenceBody": "使用明确交易时间的序列模型对照，以及合成交互图示例。"
 }

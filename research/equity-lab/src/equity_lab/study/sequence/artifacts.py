@@ -65,6 +65,33 @@ def source_identity():
         dirty = subprocess.check_output(
             ["git", "-C", str(package), "status", "--porcelain"], text=True
         ).strip()
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, OSError):
         revision, dirty = None, None
     return dict(revision=revision, dirty=dirty, files=files)
+
+
+def local_report(summary):
+    from html import escape
+
+    sections = []
+    for row in summary["completed"]:
+        counts = row["classification"]["confusion"]
+        title = escape(f"{row['model']} / fold {row['fold']} / seed {row['seed']}")
+        cells = "".join(
+            '<tr><th scope="row">'
+            + label
+            + "</th>"
+            + "".join(f"<td>{n}</td>" for n in values)
+            + "</tr>"
+            for label, values in zip(["Not above", "Above"], counts)
+        )
+        sections.append(
+            f'<section><h2>{title}</h2><table><caption>Confusion matrix: actual rows, predicted columns</caption><thead><tr><th></th><th scope="col">Not above</th><th scope="col">Above</th></tr></thead><tbody>{cells}</tbody></table></section>'
+        )
+    return (
+        '<!doctype html><html lang="en"><meta charset="utf-8"><title>Private exploratory sequence report</title><h1>Private exploratory sequence report</h1><p>Status: '
+        + escape(summary["status"])
+        + "</p><p>Retrospective, fixed-current, split-adjusted price simulation; no dividends or research promotion.</p>"
+        + "".join(sections)
+        + "</html>"
+    )

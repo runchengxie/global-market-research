@@ -58,3 +58,43 @@ def test_code_identity_is_bound_to_installed_module_not_cwd(tmp_path, monkeypatc
     after = source_identity()
     assert before == after
     assert len(after["files"]) > 10
+
+
+def test_source_identity_without_git(monkeypatch):
+    import subprocess
+    from equity_lab.study.sequence.artifacts import source_identity
+
+    def absent(*args, **kwargs):
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(subprocess, "check_output", absent)
+    identity = source_identity()
+    assert identity["revision"] is None
+    assert identity["files"]
+
+
+def test_interrupted_run_seals_partial_summary(tmp_path, monkeypatch):
+    pytest.importorskip("exchange_calendars")
+    from test_sequence_data import snapshot_fixture
+    from equity_lab.study.sequence.samples import build_samples
+    from equity_lab.study.sequence.protocol import make_folds
+    from equity_lab.study.sequence import runner
+
+    snap = snapshot_fixture(tmp_path)
+    samples = build_samples(snap, 5)
+    folds = make_folds(samples, fit=40, validation=20, test=20, minimum_test=10)[:1]
+
+    def interrupt(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(runner, "fit_prediction", interrupt)
+    summary = runner.run_study(
+        freeze_schedule(1, seeds=[11], candidates=["cash"]),
+        snap,
+        samples,
+        folds,
+        tmp_path / "partial",
+    )
+    assert summary["status"] == "partial"
+    assert len(summary["pending"]) == 1
+    assert verify_bundle(tmp_path / "partial")["status"] == "verified"

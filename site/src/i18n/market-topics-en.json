@@ -56,5 +56,7 @@
   "statusLabel": "Evidence status",
   "statusExploratory": "Exploratory",
   "statusPending": "Further tests needed",
-  "statusHistorical": "Historical record, verification pending"
+  "statusHistorical": "Historical record, verification pending",
+  "sequenceTitle": "LSTM and expert routing",
+  "sequenceBody": "Matched sequence-model comparisons with explicit timing and synthetic interactive previews."
 }

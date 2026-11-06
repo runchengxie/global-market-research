@@ -1,6 +1,8 @@
 # Global Market Research
 
 [English](README.md) · [项目网站](https://runchengxie.github.io/global-market-research/zh-CN/) · [文档目录](docs/README.zh-CN.md)
+LSTM/MoE 研究：[实验协议与运行命令](docs/research/lstm-moe.zh-CN.md)。
+
 
 这个项目研究全球市场的量化策略和因子。你可以用它整理行情数据、试跑交易策略，再把过程和结果保存下来。项目也保留了 2026 年香港量化交易比赛使用的基础设施。
 

@@ -5,7 +5,12 @@ import pandas as pd
 
 
 def classification(y, probabilities):
-    from sklearn.metrics import roc_auc_score, log_loss, brier_score_loss
+    from sklearn.metrics import (
+        roc_auc_score,
+        log_loss,
+        brier_score_loss,
+        confusion_matrix,
+    )
 
     p = np.asarray(probabilities, dtype=float)
     y = np.asarray(y)
@@ -23,6 +28,7 @@ def classification(y, probabilities):
             )
         )
     return dict(
+        confusion=confusion_matrix(y, (p > 0.5).astype(int), labels=[0, 1]).tolist(),
         auc=float(roc_auc_score(y, p)) if len(set(y)) == 2 else None,
         auc_reason=None if len(set(y)) == 2 else "one_class",
         log_loss=float(log_loss(y, p, labels=[0, 1])),

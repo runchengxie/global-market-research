@@ -23,6 +23,8 @@ def main():
         default="relative",
     )
     args = p.parse_args()
+    if args.smoke and (args.secondary or args.transformer or args.features != "relative"):
+        p.error("smoke is the fixed primary SPY diagnostic; use separate full secondary stages")
     if args.command == "inspect":
         print(json.dumps(verify_bundle(args.output)))
         return
@@ -80,6 +82,12 @@ def main():
             )
         )
     else:
+        import signal
+
+        def interrupted(signum, frame):
+            raise KeyboardInterrupt
+
+        signal.signal(signal.SIGTERM, interrupted)
         summary = run_study(schedule, snapshot, samples, folds, args.output)
         print(
             json.dumps(

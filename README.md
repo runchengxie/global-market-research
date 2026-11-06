@@ -1,6 +1,8 @@
 # Global Market Research
 
 [简体中文](README.zh-CN.md) · [Project website](https://runchengxie.github.io/global-market-research/) · [Documentation](docs/README.md)
+LSTM/MoE research: [protocol and commands](docs/research/lstm-moe.md).
+
 
 This project studies quantitative strategies and factors across global markets. It includes tools for preparing data, testing ideas and tracking results, as well as the infrastructure used for the 2026 Hong Kong quantitative trading competition.
 

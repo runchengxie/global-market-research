@@ -99,3 +99,5 @@ The broker event log owns event truth. Paper is the default account environment,
 Read-only local verification found the inspected platform default IBKR factory imports an unavailable `quant_execution_engine.broker.ibkr` module. This is separate from this repository's IBKR implementation. The inspected `quant-backtest-runtime` requires Linux and is not enabled on Windows. Passing selected provider tests does not establish an operational provider-to-broker chain.
 
 The current acceptance slice cannot validate owner provenance or governed holdouts, so research promotion is always blocked. Complete study universes, corporate actions, causal FX, verified crypto venue/product/fees, owner model protocols, real-data accounting prerequisites and supervised Paper lifecycle validation remain follow-up work. Existing visible histories remain retrospective. The public 24-result snapshot remains historical diagnostics rather than evidence of completed integration.
+
+Optional [LSTM/MoE research](research/lstm-moe.md) lives entirely inside equity-lab. Its neural dependencies are not part of root setup or execution.

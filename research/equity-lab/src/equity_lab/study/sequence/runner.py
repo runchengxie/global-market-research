@@ -389,6 +389,8 @@ def run_study(schedule, snapshot, samples, folds, output):
                 flush=True,
             )
         summary["status"] = "completed"
+    except KeyboardInterrupt:
+        summary.update(status="partial", reason="INTERRUPTED")
     except BudgetExpired as exc:
         summary.update(status="partial", reason=str(exc))
     except Exception as exc:
@@ -421,5 +423,8 @@ def run_study(schedule, snapshot, samples, folds, output):
                 for fee in [0, 5, 20, 40]
             },
         )
+        from .artifacts import local_report
+
+        (output / "report.html").write_text(local_report(summary))
         seal_bundle(output)
     return summary
