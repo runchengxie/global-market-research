@@ -49,3 +49,5 @@ uv run --locked --extra predictive --extra neural python -m equity_lab.study.seq
 要在不重新训练的情况下检验门控，使用 `audit --run /external/runs/sequence-primary`，传入相同 manifest/摘要并指定新输出目录。先校验模型重载概率，再固定等权、逐一移除专家，以及使用共享输出头逐一探测专家。产物与已封存主运行分开；这些干预与重新训练双专家架构是不同的对照。
 
 概率、敞口、风险和数据证据的进一步探索见[已训练模型诊断与本地浏览器](sequence-diagnostics.zh-CN.md)。
+
+下一轮[目标方案对照与前瞻准备](sequence-target-study.zh-CN.md)固定输入，比较分类和收益回归。

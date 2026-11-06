@@ -1,0 +1,60 @@
+---
+import facts from '../data/sequence-research.v1.json';
+import {validateResearchProjection} from '../lib/sequence-research.ts';
+import en from '../i18n/sequence-research-en.json';
+import zh from '../i18n/sequence-research-zh-CN.json';
+const locale=Astro.props.locale==='zh-CN'?'zh-CN':'en';
+const t=locale==='en'?en:zh,data=validateResearchProjection(facts);
+const number=(v:number|null)=>v===null?t.unavailable:new Intl.NumberFormat(locale,{maximumFractionDigits:5}).format(v);
+const percent=(v:number|null)=>v===null?t.unavailable:new Intl.NumberFormat(locale,{style:'percent',maximumFractionDigits:2}).format(v);
+const bps=(v:number)=>new Intl.NumberFormat(locale,{maximumFractionDigits:2}).format(v*10000);
+const docSuffix=locale==='zh-CN'?'.zh-CN':'';
+---
+<div class="research-evidence" data-research-evidence data-real-evidence>
+ <section id="current-evidence" aria-labelledby="current-evidence-title">
+  <h2 id="current-evidence-title">{t.conclusionTitle}</h2><p class="conclusion">{t.conclusion}</p><p>{t.conclusionDetail}</p>
+  <div class="sample-card"><h3>{t.sampleTitle}</h3><p>{t.sample}</p></div>
+ </section>
+ <nav class="chapter-links" aria-label={t.provenanceTitle}>{[['architecture',t.architectureTitle],['measured-results',t.resultsTitle],['explorations',t.explorationTitle],['continuation',t.gateTitle],['crypto-transfer',t.cryptoTitle]].map(([id,label])=><a href={`#${id}`}>{label} ↓</a>)}</nav>
+ <section id="architecture" aria-labelledby="architecture-title">
+  <h2 id="architecture-title">{t.architectureTitle}</h2><p>{t.architectureIntro}</p>
+  <div data-route-controls hidden><label>{t.routeLabel}<select data-route>{Object.entries(t.routeModes).map(([id,name])=><option value={id}>{name}</option>)}</select></label></div>
+  <div class="architecture-diagram" aria-label={t.architectureTitle}>
+   <div class="diagram-node"><strong>{t.inputLabel}</strong><span>{data.architecture.lookback} × {data.architecture.features}</span></div>
+   <div class="flow-arrow" aria-hidden="true">↓</div><div class="diagram-node router">{t.routerLabel}</div>
+   <div class="flow-arrow" aria-hidden="true">↓</div>
+   <div class="expert-grid">{Array.from({length:data.architecture.experts},(_,index)=><div class="diagram-node expert" data-expert data-active="true"><strong>{t.expertLabel} {index+1}</strong><span>{data.architecture.units} {t.expertUnit}</span><span data-expert-status>{t.active}</span></div>)}</div>
+   <div class="flow-arrow" aria-hidden="true">↓</div><div class="diagram-node">{t.mixLabel} · {number(data.architecture.representation)}</div>
+   <div class="flow-arrow" aria-hidden="true">↓</div><div class="diagram-node">{t.headLabel}</div>
+  </div>
+  <p class="detail">{t.routeNote}</p><p>{t.dimensions}</p>
+  <details open><summary>{t.featuresTitle}</summary><ul>{t.features.map(item=><li>{item}</li>)}</ul><p>{t.featureNote}</p></details>
+  <details><summary>{t.methodChangesTitle}</summary><ul>{t.methodChanges.map(item=><li>{item}</li>)}</ul></details>
+  <h3>{t.timingTitle}</h3><ol class="timing">{t.timingSteps.map(item=><li>{item}</li>)}</ol><p class="detail">{t.timingNote}</p>
+ </section>
+ <section id="measured-results" aria-labelledby="results-title">
+  <h2 id="results-title">{t.resultsTitle}</h2><p>{t.resultsIntro}</p>
+  <h3>{t.primaryTitle}</h3><p class="detail">{t.primaryScope}</p>
+  <div class="evidence-scroll"><table data-primary-results><caption>{t.primaryTitle}</caption><thead><tr>{[t.model,t.cases,t.flat,t.auc,t.brier,t.net,t.threshold,t.exposure,t.selectedExposure].map(label=><th scope="col">{label}</th>)}</tr></thead><tbody>{data.primary.rows.map(row=><tr data-primary-model={row.model}><th scope="row">{t.models[row.model]}</th><td>{row.cases}</td><td>{row.flat}</td><td>{number(row.auc)}</td><td>{number(row.brier_skill)}</td><td>{percent(row.net_return)}</td><td>{percent(row.threshold_return)}</td><td>{percent(row.exposure)}</td><td>{percent(row.threshold_exposure)}</td></tr>)}</tbody></table></div>
+  <p>{t.baseline.replace('{holding}',percent(data.primary.holding_return)).replace('{volatility}',percent(data.primary.volatility_return))}</p><p class="evidence-notice">{t.exposureWarning}</p>
+  <details><summary>{t.uncertaintyTitle}</summary><p>{t.uncertainty}</p><div class="evidence-scroll"><table data-uncertainty><thead><tr><th scope="col">{t.model}</th><th scope="col">{t.dailyDifference}</th><th scope="col">{t.interval}</th></tr></thead><tbody>{data.primary.rows.map(row=><tr><th scope="row">{t.models[row.model]}</th><td>{bps(row.daily_difference)}</td><td>[{row.daily_interval.map(bps).join(', ')}]</td></tr>)}</tbody></table></div></details>
+  <h3>{t.targetTitle}</h3><p class="detail">{t.targetScope}</p>
+  {data.target.status==='completed'?(['classification','regression'] as const).map(objective=><div class="target-group"><h4>{t[objective]}</h4><div class="evidence-scroll"><table data-target-results={objective}><caption>{t[objective]}</caption><thead><tr>{[t.model,t.cases,t.skill,t.ic,t.net,t.threshold,t.exposure,t.selectedExposure,t.volatility].map(label=><th scope="col">{label}</th>)}</tr></thead><tbody>{data.target.rows.filter(r=>r.objective===objective).map(row=><tr data-target-model={row.model}><th scope="row">{t.models[row.model]}</th><td>{row.cases}</td><td>{number(row.skill)}</td><td>{number(row.ic)}</td><td>{percent(row.net_return)}</td><td>{percent(row.threshold_return)}</td><td>{percent(row.exposure)}</td><td>{percent(row.threshold_exposure)}</td><td>{percent(row.volatility)}</td></tr>)}</tbody></table></div></div>):<p data-target-pending>{t.targetPending}</p>}
+  {data.target.status==='completed' && data.target.rows.filter(r=>r.model!=='prior').every(r=>r.skill!==null && r.skill<0) && <p class="evidence-notice">{t.targetFinding}</p>}
+  <p class="evidence-notice">{t.validationWarning}</p>
+  <h3>{t.chartTitle}</h3><div class="research-controls" data-research-controls hidden><label>{t.studyLabel}<select data-research-study><option value="primary">{t.primaryChoice}</option><option value="classification" disabled={data.target.status!=='completed'}>{t.classification}</option><option value="regression" disabled={data.target.status!=='completed'}>{t.regression}</option></select></label><label>{t.metricLabel}<select data-research-metric>{Object.entries(t.metrics).map(([id,name])=><option value={id}>{name}</option>)}</select></label></div>
+  <button data-research-load hidden>{t.chartLoad}</button><p data-research-error hidden>{t.chartFailed}</p><div data-research-chart hidden role="img" aria-label={t.chartTitle}></div><p class="detail">{t.chartNote}</p>
+ </section>
+ <section id="explorations" aria-labelledby="explorations-title"><h2 id="explorations-title">{t.explorationTitle}</h2><div class="exploration-grid">{data.explorations.map(stage=><article data-exploration={stage.id}><h3>{t.explorationNames[stage.id]}</h3><p class="stage-label">{t[stage.status]} · {number(stage.cases)} {t.cases} · {number(stage.fits)} {t.fits}</p><p>{t.explorationNotes[stage.id]}</p></article>)}</div></section>
+ <section id="continuation" aria-labelledby="continuation-title"><h2 id="continuation-title">{t.gateTitle}</h2><p>{t.gateIntro}</p>{data.target.continuation.map(rule=><p class="evidence-notice" data-continuation={rule.objective}><strong>{t[rule.objective]}: {t.gateStates[rule.status]}</strong><br/>{rule.passed_checks}/{rule.total_checks} {t.checks}</p>)}<p class="detail">{t.gateNote}</p><h3>{t.limitsTitle}</h3><p>{t.limits}</p><p>{t.forward}</p></section>
+ <section id="crypto-transfer" aria-labelledby="crypto-title"><h2 id="crypto-title">{t.cryptoTitle}</h2><p>{t.crypto}</p><p>{t.sentiment}</p></section>
+ <details id="research-provenance"><summary>{t.provenanceTitle}</summary><p>{t.provenance}</p><ul><li><a href={`https://github.com/runchengxie/global-market-research/blob/main/docs/research/sequence-target-study${docSuffix}.md`}>{t.protocolLink} ↗</a></li><li><a href={`https://github.com/runchengxie/global-market-research/blob/main/docs/research/sequence-diagnostics${docSuffix}.md`}>{t.diagnosticLink} ↗</a></li><li><a href="https://github.com/runchengxie/global-market-research/pull/103">{t.prLink} ↗</a></li></ul><p>{t.revision}</p><ul>{Object.entries(data.source_revisions).filter(([,revision])=>revision).map(([name,revision])=><li>{name}: <a href={`https://github.com/runchengxie/global-market-research/tree/${revision}`}><code>{revision?.slice(0,7)}</code></a></li>)}</ul></details>
+ <script type="application/json" data-research-config set:html={JSON.stringify({data,t,locale}).replaceAll('<','\\u003c')} />
+</div>
+<script>
+ import {mountSequenceResearch} from '../scripts/sequence-research.ts';
+ document.querySelectorAll<HTMLElement>('[data-research-evidence]').forEach(mountSequenceResearch);
+</script>
+<style>
+.research-evidence{min-width:0}.research-evidence section{margin:3rem 0}.research-evidence h2{font:400 clamp(1.65rem,3vw,2.1rem)/1.35 Georgia,'SimSun',serif}.research-evidence h3{font-size:1.15rem;margin-top:1.5rem}.research-evidence h4{font-size:1.05rem}.research-evidence p{line-height:1.85;max-width:90ch}.conclusion{font-size:1.25rem}.sample-card,.evidence-notice{padding:1rem 1.25rem;background:var(--surface);border-left:3px solid var(--green)}.sample-card h3{margin-top:0}.chapter-links{display:flex;flex-wrap:wrap;gap:.6rem 1.25rem;margin:2rem 0}.architecture-diagram{margin:1.5rem 0;max-width:900px}.diagram-node{padding:1rem;border:1px solid var(--line);background:var(--surface);text-align:center;display:grid;gap:.3rem;min-width:0}.router{border-color:var(--green)}.expert-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}.expert[data-active=false]{opacity:.6;border-style:dashed}.expert span:last-child{font-size:.8rem}.flow-arrow{text-align:center;font-size:1.4rem;padding:.15rem}.detail,.stage-label{color:var(--muted)}.timing{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.4rem;padding-left:1.4rem}.timing li{padding-right:.8rem}.research-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0}.research-controls[hidden],[data-route-controls][hidden],button[hidden]{display:none}label{display:grid;gap:.4rem;max-width:100%;min-width:0}select,button{font:inherit;max-width:100%;min-width:0;padding:.65rem;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:.3rem}button{cursor:pointer}select{width:100%}button:focus-visible,select:focus-visible{outline:2px solid var(--green);outline-offset:3px}[data-research-chart]{height:390px;width:100%;min-width:0;overflow:hidden;margin:1rem 0}[data-research-chart][hidden]{display:none}.evidence-scroll{overflow-x:auto;max-width:100%}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.88rem}th,td{padding:.65rem;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}caption{text-align:left;color:var(--muted);padding:.4rem 0}.exploration-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5rem}.exploration-grid article{border-top:1px solid var(--line);padding-top:.5rem}.exploration-grid h3{margin-top:.6rem}.stage-label{font-size:.8rem}details{margin:1.5rem 0}summary{cursor:pointer;font-weight:600}code{overflow-wrap:anywhere}@media(max-width:650px){.expert-grid,.timing,.research-controls,.exploration-grid{grid-template-columns:minmax(0,1fr)}.expert-grid{gap:.6rem}.timing{gap:.8rem}[data-research-chart]{height:350px}}
+</style>

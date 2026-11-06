@@ -1,0 +1,158 @@
+{
+  "schema": "sequence_research_public.v1",
+  "scope": "retrospective_aggregate_only",
+  "accepted_research": false,
+  "execution_authorized": false,
+  "sample": {
+    "stocks": 10,
+    "sessions": 953,
+    "start": "2023-01-03",
+    "end": "2026-10-20",
+    "currency": "USD",
+    "price_basis": "split_adjusted",
+    "dividends": false,
+    "fixed_current": true,
+    "previously_exposed": true
+  },
+  "architecture": {
+    "lookback": 20,
+    "features": 10,
+    "experts": 3,
+    "units": 64,
+    "top_k": 2,
+    "representation": 1280,
+    "parameters": 59682,
+    "matched_units": 114,
+    "matched_parameters": 59748,
+    "router_context": "last_feature_row",
+    "mix": "hidden_representation"
+  },
+  "primary": {
+    "folds": 7,
+    "seeds": 5,
+    "cases": 350,
+    "fee_bps": 5,
+    "rows": [
+      {
+        "model": "matched",
+        "cases": 35,
+        "flat": 8,
+        "auc": 0.5148209087683436,
+        "brier_skill": -0.0028523264333703163,
+        "net_return": 0.017006490202726175,
+        "threshold_return": 0.04240796249661103,
+        "exposure": 0.14782076556728113,
+        "threshold_exposure": 0.8546635904458165,
+        "daily_difference": 0.00021611050926206504,
+        "daily_interval": [
+          -0.0006172811550706467,
+          0.0005399405206076872
+        ]
+      },
+      {
+        "model": "equal",
+        "cases": 35,
+        "flat": 19,
+        "auc": 0.5102209545609437,
+        "brier_skill": -0.00019454229913405476,
+        "net_return": 0.005218884384566191,
+        "threshold_return": 0.0401126025855846,
+        "exposure": 0.05620466706458798,
+        "threshold_exposure": 0.8535632365167183,
+        "daily_difference": 0.000370740958498965,
+        "daily_interval": [
+          -0.000543655221140232,
+          0.0006271476204197955
+        ]
+      },
+      {
+        "model": "dense",
+        "cases": 35,
+        "flat": 17,
+        "auc": 0.5112074059346862,
+        "brier_skill": -0.0004412294841858947,
+        "net_return": 0.008444909383856647,
+        "threshold_return": 0.04091193464345335,
+        "exposure": 0.05989034041727012,
+        "threshold_exposure": 0.8522352711900086,
+        "daily_difference": 0.0003390391870720427,
+        "daily_interval": [
+          -0.0005697881776066131,
+          0.000601562966959597
+        ]
+      },
+      {
+        "model": "sparse",
+        "cases": 35,
+        "flat": 15,
+        "auc": 0.5109685455940465,
+        "brier_skill": -0.0025472781425441436,
+        "net_return": 0.006866967794788259,
+        "threshold_return": 0.037662834906760034,
+        "exposure": 0.1308183288080623,
+        "threshold_exposure": 0.8691297093774466,
+        "daily_difference": 0.00036697047469893055,
+        "daily_interval": [
+          -0.00047810912690226306,
+          0.0006995088313700986
+        ]
+      }
+    ],
+    "holding_return": 0.048534919416359124,
+    "volatility_return": 0.03712198135876221
+  },
+  "target": {
+    "status": "pending",
+    "folds": 7,
+    "seeds": 3,
+    "cases": 0,
+    "fits": 0,
+    "epochs": 30,
+    "batch_size": 128,
+    "rows": [],
+    "continuation": []
+  },
+  "explorations": [
+    {
+      "id": "primary",
+      "status": "completed",
+      "cases": 350,
+      "fits": 315
+    },
+    {
+      "id": "checkpoint",
+      "status": "completed",
+      "cases": 490,
+      "fits": 0
+    },
+    {
+      "id": "diagnostics",
+      "status": "completed",
+      "cases": 350,
+      "fits": 0
+    },
+    {
+      "id": "targets",
+      "status": "pending",
+      "cases": 0,
+      "fits": 0
+    },
+    {
+      "id": "transformer",
+      "status": "planned",
+      "cases": 0,
+      "fits": 0
+    },
+    {
+      "id": "crypto",
+      "status": "planned",
+      "cases": 0,
+      "fits": 0
+    }
+  ],
+  "source_revisions": {
+    "primary": "cfe4480b079c972c4c2aa719a7bb044a65f42780",
+    "diagnostics": "b8a42e2b8bd20681e200fb823c80e0c8a50bf558",
+    "target": null
+  }
+}

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateSequenceSummary } from '../src/lib/sequence-summary.mjs';
+import { validateSequenceSummary } from '../src/lib/sequence-summary.ts';
 test('public sequence projection rejects private series and requires synthetic label',()=>{
  assert.throws(()=>validateSequenceSummary({schema:'sequence_public_summary.v1',synthetic:false,series:[]}));
  assert.throws(()=>validateSequenceSummary({schema:'sequence_public_summary.v1',synthetic:true,private_path:'/secret',series:[]}));

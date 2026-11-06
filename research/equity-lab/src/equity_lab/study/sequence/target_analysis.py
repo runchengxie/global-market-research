@@ -187,7 +187,15 @@ def analyze_targets(summary, draws=2000):
         actual = {(r["fold"], r["model"], r["seed"]) for r in selected}
         complete = summary["status"] == "completed" and actual == expected
         gate = continuation_rule(
-            contrasts, list(range(schedule["folds"])) if complete else [], 7
+            contrasts,
+            list(range(schedule["folds"]))
+            if complete
+            and schedule["seeds"] == [11, 23, 37]
+            and schedule["epochs"] == 30
+            and schedule["batch_size"] == 128
+            and schedule["patience"] == 5
+            else [],
+            7,
         )
         model_metrics = {}
         for name in ["prior", "linear", "matched", "equal", "sparse"]:

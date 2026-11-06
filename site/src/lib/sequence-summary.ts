@@ -1,5 +1,7 @@
+export interface SyntheticSequence { schema: 'sequence_public_summary.v1'; synthetic: true; dates: string[]; series: {name: 'cash'|'holding'|'dense'|'sparse'; values: number[]}[]; }
 // This first projection admits synthetic fixtures only; real publication is separate.
-export function validateSequenceSummary(data) {
+export function validateSequenceSummary(input: unknown): SyntheticSequence {
+  const data=input as SyntheticSequence;
   if (!data || data.schema !== 'sequence_public_summary.v1' || data.synthetic !== true ||
       Object.keys(data).some(k => !['schema','synthetic','dates','series'].includes(k)) ||
       !Array.isArray(data.dates) || data.dates.some((d,i)=>d!==`D${i+1}`) || data.dates.length < 2 || !Array.isArray(data.series) || !data.series.length || new Set(data.series.map(s=>s.name)).size !== data.series.length ||

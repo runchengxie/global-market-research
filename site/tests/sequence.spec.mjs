@@ -3,7 +3,7 @@ for (const locale of ['en','zh-CN']) {
  const prefix=`/global-market-research/${locale==='en'?'':'zh-CN/'}`;
  test(`${locale}: sequence synthetic chart and accessible table`,async({page})=>{
   await page.goto(`${prefix}research/lstm-moe/`);
-  await expect(page.locator('[data-sequence] table tbody tr')).toHaveCount(12);
+  await expect(page.locator('[data-synthetic-table] tbody tr')).toHaveCount(12);
   await page.locator('[data-load]').click();
   await expect(page.locator('[data-plot] canvas')).toBeVisible();
   await page.locator('[data-model]').selectOption('sparse');
@@ -14,7 +14,7 @@ for (const locale of ['en','zh-CN']) {
   const context=await browser.newContext({javaScriptEnabled:false});
   const page=await context.newPage();
   await page.goto(`${prefix}research/lstm-moe/`);
-  await expect(page.locator('[data-sequence] table')).toBeVisible();
+  await expect(page.locator('[data-synthetic-table]')).toBeVisible();
   await expect(page.locator('[data-sequence] .notice').first()).toBeVisible();
   await context.close();
  });

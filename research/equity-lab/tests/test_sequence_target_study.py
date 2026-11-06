@@ -47,6 +47,20 @@ def test_complete_small_target_bundle_and_interrupt(tmp_path, monkeypatch):
         == "insufficient_evidence"
     )
     assert analysis["objectives"]["classification"]["complete"] is True
+    # A seven-fold smoke/custom plan is not the frozen three-seed,30-epoch screen.
+    custom = dict(
+        report,
+        schedule=freeze_target_schedule(7, seeds=[11], epochs=1),
+        completed=[
+            dict(row, fold=fold) for fold in range(7) for row in report["completed"]
+        ],
+    )
+    custom_analysis = analyze_targets(custom, draws=5)
+    assert (
+        custom_analysis["objectives"]["classification"]["continuation"]["status"]
+        == "insufficient_evidence"
+    )
+
     for record in report["completed"]:
         if record["objective"] == "regression":
             assert record["metrics"]["brier"] is None
@@ -94,3 +108,80 @@ def test_calendar_is_a_model_not_observed_availability():
     assert value["sessions"][0]["date"] == "2026-11-09"
     assert value["final_entry"]["date"] > value["sessions"][-1]["date"]
     assert value["final_exit"]["date"] > value["final_entry"]["date"]
+
+
+def test_analysis_interruption_after_compute_cannot_seal_completed(
+    tmp_path, monkeypatch
+):
+    import json
+    from equity_lab.study.sequence import target_cli
+    from equity_lab.study.sequence.artifacts import (
+        create_bundle,
+        seal_bundle,
+        verify_bundle,
+    )
+
+    parent = tmp_path / "parent"
+    create_bundle(parent, {"schema": "test"})
+    (parent / "summary.json").write_text(
+        json.dumps({"schema": "equity_lab.sequence_target_study.v1"})
+    )
+    seal_bundle(parent)
+    checks = 0
+    real_verify = target_cli.verify_bundle
+
+    def interrupt_after_compute(path):
+        nonlocal checks
+        checks += 1
+        if checks == 2:
+            raise KeyboardInterrupt
+        return real_verify(path)
+
+    monkeypatch.setattr(target_cli, "verify_bundle", interrupt_after_compute)
+    monkeypatch.setattr(
+        target_cli,
+        "analyze_targets",
+        lambda summary: {
+            "status": "completed",
+            "objectives": {
+                "classification": {
+                    "continuation": {"status": "promising_retrospective"}
+                }
+            },
+        },
+    )
+    out = tmp_path / "analysis"
+    result = target_cli.analyze_run(parent, out)
+    assert result["status"] == "partial" and result["reason"] == "INTERRUPTED"
+    assert "promising_retrospective" not in (out / "analysis.json").read_text()
+    assert verify_bundle(out)["status"] == "verified"
+
+
+def test_analysis_output_inside_parent_is_rejected_without_mutating_it(
+    tmp_path, monkeypatch
+):
+    import json
+    from equity_lab.study.sequence import target_cli
+    from equity_lab.study.sequence.artifacts import (
+        create_bundle,
+        seal_bundle,
+        verify_bundle,
+    )
+
+    parent = tmp_path / "parent"
+    create_bundle(parent, {"schema": "test"})
+    (parent / "summary.json").write_text(
+        json.dumps({"schema": "equity_lab.sequence_target_study.v1"})
+    )
+    seal_bundle(parent)
+    before = (parent / "checksums.json").read_bytes()
+    monkeypatch.setattr(
+        target_cli,
+        "analyze_targets",
+        lambda summary: {"status": "completed", "objectives": {}},
+    )
+    with pytest.raises(ValueError, match="SEPARATE"):
+        target_cli.analyze_run(parent, parent / "analysis")
+    assert (parent / "checksums.json").read_bytes() == before
+    assert not (parent / "analysis").exists()
+    assert verify_bundle(parent)["status"] == "verified"

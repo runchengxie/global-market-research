@@ -1,17 +1,22 @@
 {
-  "name": "2026-quant-competition-pages",
+  "name": "global-market-research-pages",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "astro build",
+    "build": "npm run typecheck && astro build",
     "dev": "astro dev",
     "preview": "astro preview",
-    "test": "node --test tests/*.test.mjs && playwright test"
+    "test": "node --test tests/*.test.mjs && playwright test",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@astrojs/markdown-remark": "7.3.5",
     "@playwright/test": "^1.64.1",
     "astro": "7.4.5",
-    "echarts": "6.1.0"
+    "echarts": "6.1.0",
+    "typescript": "7.0.2"
+  },
+  "engines": {
+    "node": ">=24.12.0"
   }
 }

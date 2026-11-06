@@ -63,7 +63,10 @@ def future_calendar(start, end):
 
 
 def analyze_run(parent, output):
-    parent = Path(parent)
+    parent = Path(parent).resolve()
+    output = external(Path(output))
+    if output.is_relative_to(parent):
+        raise ValueError("OUTPUT_MUST_BE_SEPARATE")
     verify_bundle(parent)
     bound = digest(parent / "checksums.json")
     summary = strict_json(parent / "summary.json")
@@ -89,14 +92,20 @@ def analyze_run(parent, output):
             "",
             "Previously exposed fixed-current history; no acceptance or execution authorization.",
             "",
-            "| Objective | Model | Prediction skill | Mean daily rank IC | Fixed5bps return* | Selected5bps return* |",
-            "|---|---|---:|---:|---:|---:|",
         ]
 
         def fmt(v):
             return "undefined" if v is None else f"{v:.5f}"
 
         for objective, result in report["objectives"].items():
+            rows.extend(
+                [
+                    f"## {objective}",
+                    "",
+                    "| Objective | Model | Prediction skill | Mean daily rank IC | Fixed5bps return* | Selected5bps return* |",
+                    "|---|---|---:|---:|---:|---:|",
+                ]
+            )
             for name, m in result["models"].items():
                 rows.append(
                     f"| {objective} | {name} | {fmt(m['mean_prediction_skill'])} | {fmt(m['mean_daily_rank_ic'])} | {m['accounts']['fixed_5']['median_fold_seed_mean_return']:.2%} | {m['accounts']['validation_5']['median_fold_seed_mean_return']:.2%} |"
@@ -115,7 +124,19 @@ def analyze_run(parent, output):
         ]
         (output / "report.md").write_text("\n".join(rows) + "\n")
     except KeyboardInterrupt:
+        report = dict(
+            schema="equity_lab.sequence_target_analysis.v1",
+            status="partial",
+            reason="INTERRUPTED",
+            accepted_research=False,
+            execution_authorized=False,
+            expand_moe=False,
+            objectives={},
+        )
         write_json(output / "analysis.json", report)
+        (output / "report.md").write_text(
+            "# Partial target analysis\n\nInterrupted before final verification; no continuation conclusion is valid.\n"
+        )
     except Exception:
         report = dict(status="invalid", reason="ANALYSIS_OR_PARENT_INVALID")
         write_json(output / "analysis.json", report)

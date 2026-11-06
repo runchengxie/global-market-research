@@ -49,3 +49,5 @@ Measured local production build: the lazily loaded chart dependency closure is a
 To test fitted routing without retraining, use `audit --run /external/runs/sequence-primary` with the same manifest/hash and a new output directory. This verifies checkpoint probabilities, then fixes equal weights, drops each expert in turn and probes each expert with the shared head. Outputs are separate from the sealed parent. These interventions are distinct from retraining a two-expert architecture.
 
 See [frozen-model diagnostics and the private browser](sequence-diagnostics.md) for probability, exposure, risk and data-evidence exploration.
+
+The next [target-scheme comparison and forward preparation](sequence-target-study.md) keeps inputs fixed while comparing classification and return regression.

@@ -1,10 +1,13 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
 import SiteNavigation from './SiteNavigation.astro';
+import SequenceEvidence from './SequenceEvidence.astro';
 import fixture from '../data/sequence-synthetic.v1.json';
-import { validateSequenceSummary } from '../lib/sequence-summary.mjs';
+import { validateSequenceSummary } from '../lib/sequence-summary.ts';
 import en from '../i18n/sequence-en.json';
 import zh from '../i18n/sequence-zh-CN.json';
+import researchEn from '../i18n/sequence-research-en.json';
+import researchZh from '../i18n/sequence-research-zh-CN.json';
 const locale=Astro.props.locale==='zh-CN'?'zh-CN':'en';
 const t=locale==='en'?en:zh;
 const data=validateSequenceSummary(fixture);
@@ -15,6 +18,8 @@ const names=t.names as Record<string,string>;
  <main class="sequence-research" data-sequence>
   <header><p class="eyebrow">{t.stage}</p><h1>{t.title}</h1><p class="lead">{t.intro}</p></header>
   <p>{t.migration} <a href="https://github.com/runchengxie/moe-lstm">{t.old} ↗</a></p>
+  <SequenceEvidence locale={locale} />
+  <h2>{(locale==='en'?researchEn:researchZh).syntheticHeading}</h2>
   <p class="notice" role="note">{t.notice}</p>
   <section aria-labelledby="sequence-chart"><h2 id="sequence-chart">{t.chart}</h2>
    <div class="controls" hidden><label>{t.method}<select data-model><option value="all">{Object.values(names).join(' / ')}</option>{data.series.map(s=><option value={s.name}>{names[s.name]}</option>)}</select></label>
@@ -22,10 +27,8 @@ const names=t.names as Record<string,string>;
    </div>
    <button data-load hidden>{t.load}</button><p data-error hidden>{t.failed}</p>
    <div data-plot hidden role="img" aria-label={t.chart}></div>
-   <details open><summary>{t.table}</summary><div class="table-scroll"><table><thead><tr><th scope="col">{t.date}</th>{data.series.map(s=><th scope="col">{names[s.name]}</th>)}</tr></thead><tbody>{data.dates.map((d,i)=><tr><th scope="row">{d}</th>{data.series.map(s=><td>{s.values[i].toFixed(3)}</td>)}</tr>)}</tbody></table></div></details>
+   <details open><summary>{t.table}</summary><div class="table-scroll"><table data-synthetic-table><thead><tr><th scope="col">{t.date}</th>{data.series.map(s=><th scope="col">{names[s.name]}</th>)}</tr></thead><tbody>{data.dates.map((d,i)=><tr><th scope="row">{d}</th>{data.series.map(s=><td>{s.values[i].toFixed(3)}</td>)}</tr>)}</tbody></table></div></details>
   </section>
-  <section><h2>{t.protocol}</h2><p>{t.models}</p><p>{t.timing}</p><p>{t.audit}</p><p>{t.data}</p><p class="notice">{t.limitations}</p></section>
-  <section><h2>{t.confusion}</h2><p>{t.cmnote}</p></section>
   <p><a href={`https://github.com/runchengxie/global-market-research/blob/main/docs/research/lstm-moe${locale==='zh-CN'?'.zh-CN':''}.md`}>{t.docs} ↗</a> · <a href="https://github.com/runchengxie/global-market-research/tree/main/research/equity-lab">{t.source} ↗</a></p>
   <script type="application/json" data-fixture set:html={JSON.stringify({data,names}).replaceAll('<','\\u003c')} />
  </main>
@@ -43,7 +46,7 @@ const names=t.names as Record<string,string>;
  button?.addEventListener('click',async()=>{
   button.disabled=true;
   try {
-   const {createSequenceChart}=await import('../scripts/sequence-chart.mjs');
+   const {createSequenceChart}=await import('../scripts/sequence-chart.ts');
    plot.hidden=false;chart=createSequenceChart(plot,payload.data);
    update();const resize=()=>chart.resize();new ResizeObserver(resize).observe(plot);window.addEventListener('resize',resize);button.hidden=true;
   } catch { (root?.querySelector('[data-error]') as HTMLElement).hidden=false;button.disabled=false; }
