@@ -6,7 +6,7 @@ LSTM/MoE research: [protocol and commands](docs/research/lstm-moe.md).
 
 This project studies quantitative strategies and factors across global markets. It includes tools for preparing data, testing ideas and tracking results, as well as the infrastructure used for the 2026 Hong Kong quantitative trading competition.
 
-The repository is `global-market-research`. The 2026 competition execution tools remain part of it. Existing competition data and private configurations keep their `2026-quant-competition` namespaces; renaming the code checkout does not move or reset them.
+Code, project data and private configuration use the `global-market-research` namespace. The 2026 competition execution tools remain part of the repository. For an older installation, follow the [recorded data and configuration migration](docs/operations/data-root-migration.md) so existing datasets, consumed budgets and operational state are preserved.
 
 New here? Start with an offline example. It uses made-up data, runs on your computer and does not submit orders. You do not need a broker account, API keys or any other `quant-*` repository.
 
