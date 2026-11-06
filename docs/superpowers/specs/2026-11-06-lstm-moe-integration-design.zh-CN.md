@@ -2,7 +2,7 @@
 
 # 将 LSTM/MoE 融入 Global Market Research
 
-状态：完整设计草案，等待审阅，尚未实施。已检查 global-market-research `b888a3a` 和 moe-lstm `14742fa`。本设计纳入用户最新要求：研究迁入 global，旧仓库和 Pages 提供迁移说明及跳转。
+状态：用户于 2026-11-06 批准设计并确认连续实施。已检查 global-market-research `b888a3a` 和 moe-lstm `14742fa`。本设计纳入用户最新要求：研究迁入 global，旧仓库和 Pages 提供迁移说明及跳转。
 
 ## 1. 要解决的问题与方案选择
 

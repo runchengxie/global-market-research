@@ -2,7 +2,7 @@
 
 # LSTM/MoE integration into Global Market Research
 
-Status: proposed for user review; implementation has not started. Baselines inspected: global-market-research `b888a3a`, moe-lstm `14742fa`. The user requested integration and a migration notice on the old repository and Pages site.
+Status: approved by the user on 2026-11-06; native implementation authorized. Baselines inspected: global-market-research `b888a3a`, moe-lstm `14742fa`. The user requested integration and a migration notice on the old repository and Pages site.
 
 ## Purpose and approach
 

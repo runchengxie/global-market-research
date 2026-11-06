@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12, optional PyTorch/scikit-learn/exchange-calendars, existing pandas/NumPy cash-rebalance primitives, Astro and selectively bundled ECharts.
 
-**Spec:** [Approved design](../specs/2026-11-06-lstm-moe-integration-design.md), [中文](../specs/2026-11-06-lstm-moe-integration-design.zh-CN.md). Design approved by user on 2026-11-06; this execution plan awaits review.
+**Spec:** [Approved design](../specs/2026-11-06-lstm-moe-integration-design.md), [中文](../specs/2026-11-06-lstm-moe-integration-design.zh-CN.md). Design approved by user on 2026-11-06; the execution plan and native implementation were confirmed by the user.
 
 ## Global Constraints
 
