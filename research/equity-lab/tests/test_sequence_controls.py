@@ -33,6 +33,11 @@ def test_fractional_cash_fees_and_binary_parity():
     assert half["return"] == pytest.approx(1.05 * 0.95 - 1)
     assert half["exposure"] == 0.5
     assert half["marks"][0]["cash"] > 0
+    for account in [old, new, half]:
+        final = account["marks"][-1]
+        assert final["cash"] == final["equity"]
+        assert final["marked_exposure"] == 0
+        assert final["open_exposure"] > 0
     for weight in [-0.01, 1.01, np.nan]:
         rows["allocation"] = weight
         with pytest.raises(ValueError, match="ALLOCATION"):

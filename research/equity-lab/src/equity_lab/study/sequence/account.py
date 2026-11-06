@@ -1,6 +1,7 @@
 """Hypothetical split-adjusted price-unit sleeves, with cash-funded fees."""
 
 import math
+from itertools import groupby
 import numpy as np
 from equity_lab.portfolio.cash_rebalance import rebalance
 
@@ -35,13 +36,16 @@ def replay_allocations(observations, fee_bps=5):
     last = {}
     marks, fills = [], []
     total_cost, turnover = 0.0, 0.0
-    for day, group in a.groupby("entry_session", sort=True):
+    for day, iterator in groupby(
+        a.itertuples(index=False), key=lambda row: row.entry_session
+    ):
+        group = list(iterator)
         if (
-            sorted(group.symbol.tolist()) != symbols
-            or group.exit_session.nunique() != 1
+            sorted(row.symbol for row in group) != symbols
+            or len({row.exit_session for row in group}) != 1
         ):
             raise ValueError("INCOMPLETE_ACCOUNT_PANEL")
-        for row in group.itertuples():
+        for row in group:
             n = row.symbol
             if n in last and (
                 last[n][0] != day or not math.isclose(last[n][1], row.entry_price)
@@ -67,17 +71,17 @@ def replay_allocations(observations, fee_bps=5):
             total_cost += trade["cost"]
             turnover += trade["traded"]
             last[n] = (row.exit_session, row.exit_price)
-        open_prices = dict(zip(group.symbol, group.entry_price))
+        open_prices = {row.symbol: row.entry_price for row in group}
         open_gross = sum(quantities[n].get(n, 0) * open_prices[n] for n in symbols)
         open_equity = sum(cash.values()) + open_gross
         equity = sum(cash[n] + quantities[n].get(n, 0) * last[n][1] for n in symbols)
         gross = sum(quantities[n].get(n, 0) * last[n][1] for n in symbols)
         marks.append(
             dict(
-                date=group.exit_session.iloc[0],
+                date=group[0].exit_session,
                 equity=equity,
                 cash=sum(cash.values()),
-                target_exposure=float(group.allocation.mean()),
+                target_exposure=float(np.mean([row.allocation for row in group])),
                 open_exposure=float(open_gross / open_equity),
                 marked_exposure=float(gross / equity),
             )
@@ -96,7 +100,9 @@ def replay_allocations(observations, fee_bps=5):
                     cost=trade["cost"],
                 )
             )
-    marks[-1].update(equity=sum(cash.values()), cash=sum(cash.values()))
+    marks[-1].update(
+        equity=sum(cash.values()), cash=sum(cash.values()), marked_exposure=0.0
+    )
     equity = np.array([1.0, *[m["equity"] for m in marks]])
     returns = equity[1:] / equity[:-1] - 1
     sd = returns.std(ddof=1) if len(returns) > 1 else 0.0
