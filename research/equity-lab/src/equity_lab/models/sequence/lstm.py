@@ -81,7 +81,8 @@ class SequenceModel(nn.Module):
                 weights[:, index] = 0
                 # A sparse route may lose all selected mass. Explicitly zero its
                 # representation; never silently route it to an unchosen expert.
-                weights = weights / weights.sum(1, keepdim=True).clamp_min(1e-9)
+                if self.config["top_k"] != 1:
+                    weights = weights / weights.sum(1, keepdim=True).clamp_min(1e-9)
             elif set(intervention) == {"only"}:
                 index = intervention["only"]
                 if type(index) is not int or not 0 <= index < len(self.experts):

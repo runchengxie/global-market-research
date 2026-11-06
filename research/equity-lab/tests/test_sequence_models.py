@@ -108,3 +108,12 @@ def test_fitted_routing_interventions_hold_weights_fixed():
     assert all(
         torch.equal(value, before[name]) for name, value in model.state_dict().items()
     )
+
+
+def test_top_one_dropping_unselected_expert_preserves_prediction():
+    model = SequenceModel(features=3, lookback=5, units=4, top_k=1)
+    with torch.no_grad():
+        model.router.weight.zero_()
+        model.router.bias.copy_(torch.tensor([2.0, 0.0, -2.0]))
+    x = torch.randn(4, 5, 3)
+    assert torch.equal(model(x)["logits"], model(x, intervention={"drop": 1})["logits"])
