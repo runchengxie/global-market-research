@@ -4,6 +4,7 @@ from equity_lab.study.sequence.selection import select_features
 
 
 def test_selectors_are_fit_only_and_nonempty():
+    pytest.importorskip("sklearn")
     rng = np.random.default_rng(11)
     x = rng.normal(size=(40, 5, 15)).astype("float32")
     x[:, :, 1] = x[:, :, 0]

@@ -102,8 +102,6 @@ jobs:
     env:
       MPLBACKEND: Agg
       OMP_NUM_THREADS: "1"
-      DATA_ROOT: ${{ runner.temp }}/sequence-data
-      UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/sequence-env
     defaults:
       run:
         working-directory: research/equity-lab
@@ -112,6 +110,11 @@ jobs:
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
         with:
           version: "0.13.7"
+      - name: Configure external neural test paths
+        shell: bash
+        run: |
+          echo "DATA_ROOT=$RUNNER_TEMP/sequence-data" >> "$GITHUB_ENV"
+          echo "UV_PROJECT_ENVIRONMENT=$RUNNER_TEMP/sequence-env" >> "$GITHUB_ENV"
       - run: uv sync --locked --group dev --extra predictive --extra neural
       - run: uv run --locked --extra predictive --extra neural ruff check .
       - run: uv run --locked --extra predictive --extra neural pytest tests/test_sequence_*.py -q

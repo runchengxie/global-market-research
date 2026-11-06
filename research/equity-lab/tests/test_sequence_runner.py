@@ -31,6 +31,7 @@ def test_bundle_is_exclusive_and_detects_corruption(tmp_path):
 
 def test_installed_synthetic_run_roundtrip(tmp_path):
     pytest.importorskip("torch")
+    pytest.importorskip("exchange_calendars")
     from test_sequence_data import snapshot_fixture
     from equity_lab.study.sequence.samples import build_samples
     from equity_lab.study.sequence.protocol import make_folds
