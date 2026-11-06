@@ -6,7 +6,12 @@ import json
 import os
 from pathlib import Path
 
-from competition_tools.project_storage import alternate_locations, guarded_location
+from competition_tools.project_storage import (
+    CANONICAL,
+    LEGACY,
+    alternate_locations,
+    guarded_location,
+)
 from packages.audit import EventJournal
 from packages.execution_policies.paper_allocation import AllocationError
 
@@ -42,8 +47,44 @@ class AllocationState:
 
     @contextmanager
     def account_lock(self):
-        with guarded_location(self.root, self.account_relative + "/lease"):
+        # OS locks release on process death; durable uncertainty is a separate file.
+        project = next(
+            (
+                p
+                for p in (self.root, *self.root.parents)
+                if p.name in (CANONICAL, LEGACY)
+            ),
+            None,
+        )
+        namespace = (
+            CANONICAL + ":" + self.root.relative_to(project).as_posix()
+            if project
+            else str(self.root)
+        )
+        token = hashlib.sha256(
+            (namespace + ":" + self.account_relative).encode()
+        ).hexdigest()
+        locks = (
+            project.parent if project else self.root.parent
+        ) / ".global-market-research-guards"
+        alternate_locations(locks, "validation")
+        locks.mkdir(parents=True, exist_ok=True)
+        fd = os.open(locks / (token + ".account-lock"), os.O_CREAT | os.O_RDWR, 0o600)
+        try:
+            if os.name == "nt":
+                import msvcrt
+
+                if os.fstat(fd).st_size == 0:
+                    os.write(fd, b"0")
+                os.lseek(fd, 0, os.SEEK_SET)
+                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
             yield
+        finally:
+            os.close(fd)
 
     def unresolved(self):
         return [

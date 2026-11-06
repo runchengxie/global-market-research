@@ -110,13 +110,17 @@ class PaperAllocationRunner:
         self.spec.validate(self.clock(), check_window=False)
         return compute_allocation(self.spec.policy, snapshot, self.clock())
 
-    def _snapshot(self, initial=None):
+    def _check_submission_controls(self):
         self.spec.validate(self.clock())
         if (self.state.root / "STOP").exists():
             raise AllocationError("stopped")
         if self.kill_switch is not None:
             self.kill_switch.assert_clear()
+
+    def _snapshot(self, initial=None):
+        self._check_submission_controls()
         snap = self.broker.snapshot()
+        self._check_submission_controls()
         if snap.account != self.spec.account or snap.open_orders:
             raise AllocationError("account_mismatch_or_open_orders")
         if not -1 <= (aware(self.clock()) - aware(snap.at)).total_seconds() <= 15:
@@ -203,6 +207,7 @@ class PaperAllocationRunner:
         )
 
     def _submit(self, command):
+        self._check_submission_controls()
         self.state.mark_unresolved()
         self.state.record(
             command.intent.order_id + ":intent",
@@ -216,6 +221,7 @@ class PaperAllocationRunner:
             order_id=command.intent.order_id,
             status="unknown",
         )
+        self._check_submission_controls()
         out = self.broker.execute(
             command, lambda event: self._record_outcome(command, event)
         )
@@ -323,6 +329,7 @@ class PaperAllocationRunner:
             self.state.assert_claim()
             events = self.state.journal.read()
             if any(e["kind"] == "run_reconciled" for e in events):
+                self.state.clear_unresolved()
                 return "reconciled"
             commands = [
                 LimitCommand.from_dict(e["command"])

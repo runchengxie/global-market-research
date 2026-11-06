@@ -155,7 +155,7 @@ class IBKRPaperAllocationBroker:
     def snapshot(self):
         self._identity()
         account = self.spec.account
-        rows = self.ib.accountValues(account)
+        rows, observed_at = self._download_account_values()
         if any(v.account != account for v in rows):
             raise AllocationError("account_value_identity_mismatch")
 
@@ -224,7 +224,30 @@ class IBKRPaperAllocationBroker:
             stock,
             fx,
         )
-        return AccountSnapshot(account, values, positions, open_orders, self.clock())
+        return AccountSnapshot(account, values, positions, open_orders, observed_at)
+
+    def _download_account_values(self):
+        account = self.spec.account
+        rows = {}
+        observed = []
+
+        def capture(value):
+            if value.account == account:
+                rows[(value.tag, value.currency, value.modelCode)] = value
+                observed.append(self.clock())
+
+        # A dedicated client owns this subscription. reqAccountUpdates waits for
+        # accountDownloadEnd; capture only rows received during this download.
+        self.ib.client.reqAccountUpdates(False, account)
+        self.ib.accountValueEvent += capture
+        try:
+            self.ib.reqAccountUpdates(account)
+        finally:
+            self.ib.accountValueEvent -= capture
+            self.ib.client.reqAccountUpdates(False, account)
+        if not observed:
+            raise AllocationError("fresh_account_download_required")
+        return list(rows.values()), min(observed)
 
     def _quotes(self):
         self.ib.reqMarketDataType(1)

@@ -183,3 +183,63 @@ def test_storage_alias_prevents_duplicate_attempt(tmp_path):
     alias = tmp_path / "2026-quant-competition" / "paper-allocation"
     with pytest.raises((AllocationError, FileExistsError)):
         run(alias, Broker(), spec("another-run")).run()
+
+
+def test_reconcile_clears_marker_after_crash_between_receipt_and_clear(tmp_path):
+    broker = Broker()
+    runner = run(tmp_path, broker)
+    assert runner.run() == "reconciled"
+    runner.state.mark_unresolved()  # receipt durable, marker removal was lost
+    assert runner.reconcile() == "reconciled"
+    assert runner.state.unresolved() == []
+
+
+@pytest.mark.parametrize("snapshot_number", [2, 4])
+def test_stop_created_during_final_snapshot_prevents_next_submission(
+    tmp_path, snapshot_number
+):
+    class StoppingBroker(Broker):
+        count = 0
+
+        def snapshot(self):
+            self.count += 1
+            if self.count == snapshot_number:
+                (tmp_path / "STOP").touch()
+            return super().snapshot()
+
+    broker = StoppingBroker()
+    result = run(tmp_path, broker).run()
+    assert result in {"blocked", "unknown"}
+    assert [c.stage for c in broker.commands] == (
+        [] if snapshot_number == 2 else ["fx"]
+    )
+
+
+def test_process_death_releases_account_lock_for_reconciliation(tmp_path):
+    import subprocess
+    import sys
+    import os
+
+    code = """
+import json,os,sys
+from apps.execution_runner.paper_spec import AllocationSpec
+from apps.execution_runner.paper_state import AllocationState
+state=AllocationState(sys.argv[1],AllocationSpec.from_dict(json.loads(sys.argv[2])))
+with state.account_lock():
+    os._exit(0)
+"""
+    import json
+
+    env = {
+        **os.environ,
+        "PYTHONPATH": str(
+            __import__("pathlib").Path(__file__).resolve().parents[2] / "src"
+        ),
+    }
+    subprocess.run(
+        [sys.executable, "-c", code, str(tmp_path), json.dumps(spec().to_dict())],
+        env=env,
+        check=True,
+    )
+    with run(tmp_path).state.account_lock():
+        pass

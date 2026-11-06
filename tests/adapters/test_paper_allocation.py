@@ -59,9 +59,28 @@ def spec():
     )
 
 
+class Event:
+    def __init__(self):
+        self.handlers = []
+
+    def __iadd__(self, handler):
+        self.handlers.append(handler)
+        return self
+
+    def __isub__(self, handler):
+        self.handlers.remove(handler)
+        return self
+
+    def emit(self, value):
+        for handler in self.handlers:
+            handler(value)
+
+
 class IB:
     def __init__(self):
         self.connected = False
+        self.accountValueEvent = Event()
+        self.client = N(reqAccountUpdates=lambda subscribe, account: None)
         self.account = "DU123456"
         self.placed = []
         self.cancelled = []
@@ -102,6 +121,13 @@ class IB:
 
     def reqPositions(self):
         return []
+
+    def reqAccountUpdates(self, account):
+        for value in IB.accountValues(self, account):
+            if value.tag == "NetLiquidation":
+                value.value = getattr(self, "download_nav", value.value)
+            value.modelCode = ""
+            self.accountValueEvent.emit(value)
 
     def accountValues(self, account):
         return [
@@ -261,3 +287,15 @@ def test_reconcile_missing_broker_evidence_is_unknown_and_read_only():
     port = broker(ib)
     assert port.reconcile([command()], {}) == {}
     assert ib.placed == [] and ib.cancelled == []
+
+
+def test_snapshot_requires_new_account_download_not_existing_cache():
+    class CachedIB(IB):
+        def accountValues(self, account):
+            raise AssertionError("Must not label cached account values fresh")
+
+    ib = CachedIB()
+    port = broker(ib)
+    # Simulate a broker download that differs from any prior cached balance.
+    ib.download_nav = "8000"
+    assert port.snapshot().values.nav_sgd == D("8000")
