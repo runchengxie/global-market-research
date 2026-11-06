@@ -6,11 +6,26 @@ from equity_lab.portfolio.cash_rebalance import rebalance
 
 
 def replay_sequence(observations, fee_bps=5):
+    if (
+        "prediction" not in observations
+        or not np.isin(observations.prediction, [0, 1]).all()
+    ):
+        raise ValueError("INVALID_POSITION")
+    rows = observations.copy()
+    rows["allocation"] = rows.prediction.astype(float)
+    return replay_allocations(rows, fee_bps)
+
+
+def replay_allocations(observations, fee_bps=5):
+    """Daily-rebalanced sleeve weights in [0,1], not a hindsight match."""
     a = observations.copy().sort_values(["entry_session", "symbol"])
     if a.empty or a.duplicated(["entry_session", "symbol"]).any():
         raise ValueError("INVALID_ACCOUNT_ROWS")
-    if not np.isin(a.prediction, [0, 1]).all():
-        raise ValueError("INVALID_POSITION")
+    if "allocation" not in a:
+        raise ValueError("INVALID_ALLOCATION")
+    allocation = a.allocation.to_numpy(dtype=float)
+    if not np.isfinite(allocation).all() or ((allocation < 0) | (allocation > 1)).any():
+        raise ValueError("INVALID_ALLOCATION")
     prices = a[["entry_price", "exit_price"]].to_numpy(dtype=float)
     if not np.isfinite(prices).all() or (prices <= 0).any():
         raise ValueError("INVALID_ACCOUNT_PRICE")
@@ -20,9 +35,7 @@ def replay_sequence(observations, fee_bps=5):
     last = {}
     marks, fills = [], []
     total_cost, turnover = 0.0, 0.0
-    dates = sorted(a.entry_session.unique())
-    for day in dates:
-        group = a[a.entry_session == day]
+    for day, group in a.groupby("entry_session", sort=True):
         if (
             sorted(group.symbol.tolist()) != symbols
             or group.exit_session.nunique() != 1
@@ -38,7 +51,7 @@ def replay_sequence(observations, fee_bps=5):
                 cash[n],
                 quantities[n],
                 {n: float(row.entry_price)},
-                {n: float(row.prediction)},
+                {n: float(row.allocation)},
                 fee_bps,
             )
             cash[n], quantities[n] = trade["cash"], trade["quantities"]
@@ -54,10 +67,19 @@ def replay_sequence(observations, fee_bps=5):
             total_cost += trade["cost"]
             turnover += trade["traded"]
             last[n] = (row.exit_session, row.exit_price)
+        open_prices = dict(zip(group.symbol, group.entry_price))
+        open_gross = sum(quantities[n].get(n, 0) * open_prices[n] for n in symbols)
+        open_equity = sum(cash.values()) + open_gross
         equity = sum(cash[n] + quantities[n].get(n, 0) * last[n][1] for n in symbols)
+        gross = sum(quantities[n].get(n, 0) * last[n][1] for n in symbols)
         marks.append(
             dict(
-                date=group.exit_session.iloc[0], equity=equity, cash=sum(cash.values())
+                date=group.exit_session.iloc[0],
+                equity=equity,
+                cash=sum(cash.values()),
+                target_exposure=float(group.allocation.mean()),
+                open_exposure=float(open_gross / open_equity),
+                marked_exposure=float(gross / equity),
             )
         )
     for n in symbols:
@@ -87,7 +109,7 @@ def replay_sequence(observations, fee_bps=5):
         trades=len(fills),
         cost=total_cost,
         turnover=turnover,
-        exposure=float(a.prediction.mean()),
+        exposure=float(a.allocation.mean()),
         marks=marks,
         fills=fills,
     )

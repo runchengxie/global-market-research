@@ -37,7 +37,7 @@ jobs:
           version: "0.13.7"
       - run: uv sync --locked --group dev
       - run: uv run --locked ruff check .
-      - run: uv run --locked pytest -q
+      - run: uv run --locked pytest -q --durations=15
       - name: Synthetic demo and smoke backtest
         shell: bash
         run: |

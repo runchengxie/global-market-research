@@ -1,0 +1,49 @@
+name: Code size and source inventory
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Fetch pinned official cloc
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 https://raw.githubusercontent.com/AlDanial/cloc/v2.10/cloc --output "$RUNNER_TEMP/cloc.pl"
+          echo "bf59272455172108072a0a106379f7509fd4349bdcfd85203bac038ccd286d83  $RUNNER_TEMP/cloc.pl" | sha256sum --check
+      - name: Measure committed source and inventory
+        env:
+          PYTHONPATH: src
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/code-inventory"
+          args=()
+          if [ -n "$BASE_SHA" ]; then args+=(--base "$BASE_SHA"); fi
+          python -m competition_tools.code_size --cloc "$RUNNER_TEMP/cloc.pl" --output "$RUNNER_TEMP/code-inventory/size.json" "${args[@]}"
+          python -m competition_tools.source_inventory --output "$RUNNER_TEMP/code-inventory/source.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          r=json.loads((Path(os.environ['RUNNER_TEMP'])/'code-inventory/size.json').read_text())
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('## Informational code inventory\n\n| Scope | Code lines |\n|---|---:|\n')
+              for key in ['implementation_code','test_code','program_code']:
+                  f.write(f"| {key} | {r[key]:,} |\n")
+              f.write('\nExcludes prose/config/data and lockfiles from program counts. No size quality gate.\n')
+              if 'delta' in r: f.write('\nBase deltas: `'+json.dumps(r['delta'])+'`\n')
+          PY
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: code-inventory
+          path: ${{ runner.temp }}/code-inventory

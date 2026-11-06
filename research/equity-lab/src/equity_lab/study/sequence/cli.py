@@ -9,7 +9,7 @@ from .config import freeze_schedule
 
 def main():
     p = argparse.ArgumentParser(__doc__)
-    p.add_argument("command", choices=["plan", "run", "inspect", "audit"])
+    p.add_argument("command", choices=["plan", "run", "inspect", "audit", "diagnose"])
     p.add_argument("--manifest", type=Path)
     p.add_argument("--expected-sha256")
     p.add_argument(
@@ -51,6 +51,16 @@ def main():
 
         records = audit_fitted_models(snapshot, args.run, args.output)
         print(json.dumps(dict(status="completed", interventions=len(records))))
+        return
+    if args.command == "diagnose":
+        if args.run is None:
+            p.error("diagnose requires --run")
+        from .diagnostics import diagnose_run
+
+        report = diagnose_run(snapshot, args.run, args.output)
+        print(json.dumps(dict(status=report["status"], records=len(report["records"]))))
+        if report["status"] != "completed":
+            raise SystemExit(2)
         return
     samples = build_samples(
         snapshot,

@@ -113,7 +113,8 @@ def test_pure_leaf_cannot_import_the_other_independent_package(tmp_path):
     "project, package", [("equity-lab", "equity_lab"), ("crypto-mm", "crypto_mm")]
 )
 @pytest.mark.parametrize(
-    "module", ["adapters.ibkr.connection", "apps.execution_runner.preflight", "ib_insync"]
+    "module",
+    ["adapters.ibkr.connection", "apps.execution_runner.preflight", "ib_insync"],
 )
 def test_pure_layers_cannot_depend_on_execution_or_broker_modules(
     tmp_path, layer, project, package, module
@@ -149,3 +150,25 @@ def test_current_production_tree_respects_workflow_boundaries():
     result = check_boundaries(Path(__file__).resolve().parents[2])
     assert result["status"] == "completed", result["violations"]
     assert result["files_checked"] > 200
+
+
+@pytest.mark.parametrize(
+    "path,text",
+    [
+        (
+            "research/equity-lab/src/equity_lab/models/leak.py",
+            "from adapters.ibkr import events\n",
+        ),
+        (
+            "research/equity-lab/src/equity_lab/data/leak.py",
+            "from equity_lab.models.sequence import lstm\n",
+        ),
+        (
+            "research/equity-lab/src/equity_lab/portfolio/leak.py",
+            "from equity_lab.models.sequence import lstm\n",
+        ),
+    ],
+)
+def test_neural_and_pure_layers_have_explicit_boundaries(tmp_path, path, text):
+    result = check_boundaries(source(tmp_path, path, text))
+    assert result["status"] == "failed"

@@ -29,6 +29,7 @@ include = ["equity_lab*"]
 
 [tool.setuptools.package-data]
 equity_lab = ["config/**/*.yaml", "config/**/*.txt"]
+"equity_lab.study.sequence" = ["templates/*.html", "templates/*.json"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

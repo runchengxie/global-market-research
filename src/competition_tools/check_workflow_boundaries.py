@@ -43,7 +43,20 @@ def _rule(relative):
             continue
         layer = relative[len(base) :].split("/")[0]
         forbidden = {
+            "models": (
+                "data",
+                "backtest",
+                "services",
+                "strategies",
+                "portfolio",
+                "evaluation",
+                "signals",
+                "daily",
+                "engine",
+                "strategy",
+            ),
             "data": (
+                "models",
                 "backtest",
                 "services",
                 "strategies",
@@ -65,6 +78,7 @@ def _rule(relative):
                 "strategy",
             ),
             "portfolio": (
+                "models",
                 "backtest",
                 "services",
                 "strategies",
@@ -74,6 +88,7 @@ def _rule(relative):
                 "strategy",
             ),
             "evaluation": (
+                "models",
                 "backtest",
                 "services",
                 "strategies",
