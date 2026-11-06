@@ -22,9 +22,9 @@
 
 | 用途 | 位置 |
 | --- | --- |
-| 启动 JSON、私有 INI、独立设置、生成的启动器和运行副本 | `CONFIG_ROOT/deployments/2026-quant-competition/ibgateway-paper/` |
+| 启动 JSON、私有 INI、独立设置、生成的启动器和运行副本 | `CONFIG_ROOT/deployments/global-market-research/ibgateway-paper/` |
 | 原始 IBC 压缩包和解压目录 | 源码外、由当前用户保护的工具目录 |
-| 日志 | `DATA_ROOT/2026-quant-competition/operations/ibgateway-paper/` |
+| 日志 | `DATA_ROOT/global-market-research/operations/ibgateway-paper/` |
 
 将 [launcher.example.json](../../config/ibgateway-paper/launcher.example.json) 和 [ibc.example.ini](../../config/ibgateway-paper/ibc.example.ini) 复制到私有目录，替换所有绝对路径占位符。保留 `activation_authorized=false`、`retry_limit=0`，超时设为 30–300 秒。源码模板不含登录凭据。如需自动填入，请自行在私有 INI 中添加 `IbLoginId` 和 `IbPassword`，不要写入启动 JSON、命令行、任务 XML 或聊天。未配置凭据时，在 Gateway 界面手动输入。
 

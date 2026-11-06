@@ -60,7 +60,7 @@ Filled-close provenance is recorded before forward filling: `is_missing_bar` des
 
 ## Configuration and outputs
 
-Use Python 3.12. Set `DATA_ROOT` to an absolute shared data directory before using CLI or configuration-dependent modules. It resolves to `DATA_ROOT/2026-quant-competition/research/equity-lab/`. Alternatively set `WORKSPACE_CONFIG` to a TOML file containing an absolute `data_root`. Discovery then checks `CONFIG_ROOT/shared/workspace.toml`, or `XDG_CONFIG_HOME/quant-competition/shared/workspace.toml` (default `~/.config/quant-competition/shared/workspace.toml`). An explicit `DATA_ROOT` takes precedence. Missing or invalid settings raise an error, including for commands that import configuration before parsing `--help`.
+Use Python 3.12. Set `DATA_ROOT` to an absolute shared data directory before using CLI or configuration-dependent modules. It resolves to `DATA_ROOT/global-market-research/research/equity-lab/`. Alternatively set `WORKSPACE_CONFIG` to a TOML file containing an absolute `data_root`. Discovery then checks `CONFIG_ROOT/shared/workspace.toml`, or `XDG_CONFIG_HOME/quant-competition/shared/workspace.toml` (default `~/.config/quant-competition/shared/workspace.toml`). An explicit `DATA_ROOT` takes precedence. Missing or invalid settings raise an error, including for commands that import configuration before parsing `--help`.
 
 Keep virtual environments, inputs, reports, charts and model outputs outside the checkout. For uv, set `UV_PROJECT_ENVIRONMENT` to an external environment path. Demo generation refuses to replace existing data. Demo numbers are fictional software fixtures and provide no investment or competition performance evidence.
 

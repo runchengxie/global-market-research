@@ -32,4 +32,4 @@ python -m competition_tools.team run next-open --config /absolute/private/team.t
 
 信号时钟采用各来源交易日最晚的预定 UTC 收盘时间。随后第一个预定开盘必须有来源 bar，否则记录拒绝输入，不改用收盘价兜底。日历为 XNYS/XHKG/XLON/XASX/XSES。收盘数据可用性和同交易日汇率中点时序仍是显式假设。结果为不含股息的 USD 价格 NAV。36 组成本组合仍是诊断，零汇兑成本只是乐观下界。输入锁保留 `global_etf_next_open.input_lock.v2`，通过 `accounting_engine` 记录比赛自有实现身份；历史 v1 输入锁保持原样。
 
-两个入口都拒绝已有输出目录或源码目录。团队入口将子进程日志保存在外部 `<data_root>/2026-quant-competition/team-runs/`，只返回脱敏结果。实验不改变默认五区域轮动、执行契约或历史公开的 24 项结果快照，也不发布新的真实数据收益结论。适配代码使用目录级 MIT 许可证；迁入的账本及其测试保留 Apache-2.0、来源说明和文件清单。
+两个入口都拒绝已有输出目录或源码目录。团队入口将子进程日志保存在外部 `<data_root>/global-market-research/team-runs/`，只返回脱敏结果。实验不改变默认五区域轮动、执行契约或历史公开的 24 项结果快照，也不发布新的真实数据收益结论。适配代码使用目录级 MIT 许可证；迁入的账本及其测试保留 Apache-2.0、来源说明和文件清单。

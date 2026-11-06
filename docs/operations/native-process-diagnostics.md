@@ -7,7 +7,7 @@ The diagnostic separates process launch, redirected-stream collection, child exi
 Run from the repository root with an installed root environment and an absolute external destination that does not exist:
 
 ```powershell
-python -m competition_tools.check_native_process_delivery --output-root D:/data/2026-quant-competition/task-results/process-check --timeout-seconds 10
+python -m competition_tools.check_native_process_delivery --output-root D:/data/global-market-research/task-results/process-check --timeout-seconds 10
 ```
 
 `diagnostic.json` contains sanitized timing and status fields. The nested `native/` directory retains synthetic stdout/stderr and the wrapper's timing record locally. Do not publish raw process streams. `completed` means the synthetic child exited successfully. Other statuses distinguish `start_failed`, `child_failed`, `observation_timeout`, and `outer_timeout`.

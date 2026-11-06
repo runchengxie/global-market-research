@@ -16,7 +16,7 @@ import sys
 import tomllib
 import zipfile
 
-from competition_tools.project_storage import project_root
+from competition_tools.project_storage import CANONICAL, LEGACY, project_root
 
 RELEASE_SHA256 = "ba8e95f61f3c7c252620baef41e550c6aab98f6034179156e11a9a1623fdd892"
 KEYS = set(
@@ -279,10 +279,16 @@ def build_launch_spec(
             key: _path(workspace[key])
             for key in ("code_root", "data_root", "config_root")
         }
-        deployment = (
-            roots["config_root"] / "deployments/2026-quant-competition/ibgateway-paper"
-        )
         path = _path(str(config_path))
+        deployments = [
+            roots["config_root"] / "deployments" / namespace / "ibgateway-paper"
+            for namespace in (CANONICAL, LEGACY)
+        ]
+        # The explicit config path chooses one namespace; private children must
+        # remain inside that same deployment. No fallback credential/config read.
+        deployment = next(
+            (root for root in deployments if path.is_relative_to(root)), deployments[0]
+        )
         _inside(path, deployment)
         if path.is_relative_to(roots["code_root"]):
             fail("PRIVATE_CONFIG_IN_SOURCE")
@@ -324,7 +330,8 @@ def build_launch_spec(
             _inside(Path(config[key]), deployment)
         _inside(
             Path(config["log_directory"]),
-            project_root(roots["data_root"], workspace.get("project_data_root")) / "operations",
+            project_root(roots["data_root"], workspace.get("project_data_root"))
+            / "operations",
         )
         for key in (
             "release_archive",

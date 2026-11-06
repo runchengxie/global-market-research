@@ -5,7 +5,7 @@
 Run these commands from the repository root. Set `DATA_ROOT` to an absolute directory outside the checkout before running tests. Resolve it from your workspace configuration or choose an explicit external directory. Keep environments and retained test output there.
 
 ```powershell
-$env:UV_PROJECT_ENVIRONMENT = Join-Path $env:DATA_ROOT "2026-quant-competition/environments/dev"
+$env:UV_PROJECT_ENVIRONMENT = Join-Path $env:DATA_ROOT "global-market-research/environments/dev"
 ```
 ## Python checks
 

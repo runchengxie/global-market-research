@@ -51,7 +51,7 @@
 
 ## 配置与输出
 
-使用 Python 3.12。使用 CLI 或需要读取配置的模块前，将 `DATA_ROOT` 设置为共享数据目录的绝对路径，项目数据目录为 `DATA_ROOT/2026-quant-competition/research/equity-lab/`。也可以将 `WORKSPACE_CONFIG` 指向包含绝对路径 `data_root` 的 TOML 文件。默认查找 `CONFIG_ROOT/shared/workspace.toml`，或 `XDG_CONFIG_HOME/quant-competition/shared/workspace.toml`，后者默认是 `~/.config/quant-competition/shared/workspace.toml`。显式 `DATA_ROOT` 优先。配置缺失或无效会报错，包括解析 `--help` 前已导入配置的命令。
+使用 Python 3.12。使用 CLI 或需要读取配置的模块前，将 `DATA_ROOT` 设置为共享数据目录的绝对路径，项目数据目录为 `DATA_ROOT/global-market-research/research/equity-lab/`。也可以将 `WORKSPACE_CONFIG` 指向包含绝对路径 `data_root` 的 TOML 文件。默认查找 `CONFIG_ROOT/shared/workspace.toml`，或 `XDG_CONFIG_HOME/quant-competition/shared/workspace.toml`，后者默认是 `~/.config/quant-competition/shared/workspace.toml`。显式 `DATA_ROOT` 优先。配置缺失或无效会报错，包括解析 `--help` 前已导入配置的命令。
 
 虚拟环境、输入数据、报告、图表和模型输出放在源码目录之外。使用 uv 时，将 `UV_PROJECT_ENVIRONMENT` 指向外部环境目录。演示生成器拒绝覆盖已有数据。演示数字仅用于验证软件，不代表投资收益或比赛表现。
 

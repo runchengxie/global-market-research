@@ -51,7 +51,7 @@ python -m competition_tools.datasets.research_evidence --manifest /absolute/data
 将 `DEXPAPRIKA_API_KEY` 保存在仓库外的 `CONFIG_ROOT/projects/<repo>/providers/dexpaprika.env`。迁移 CLI 读取明确指定的 `workspace.toml`，仅从指定原工作区的 `.env` 移走这一项，保留其他字节，并在目标旁保存仅所有者可访问的恢复副本。凭据冲突、重解析路径和源码仓库内的目标会被拒绝。完全为空的 `.git` 占位目录不视为仓库，非空元数据和 Git 文件仍被拒绝。Windows 迁移使用 Windows PowerShell 和 icacls 权限工具。研究子进程既不接收凭据文件参数，也不继承 `DEXPAPRIKA_API_KEY`。
 
 ```sh
-python -m competition_tools.datasets.dex_credentials migrate --workspace /absolute/private/shared/workspace.toml --source-env /absolute/code/global-market-research/.env --destination /absolute/private/projects/2026-quant-competition/providers/dexpaprika.env
+python -m competition_tools.datasets.dex_credentials migrate --workspace /absolute/private/shared/workspace.toml --source-env /absolute/code/global-market-research/.env --destination /absolute/private/projects/global-market-research/providers/dexpaprika.env
 python -m competition_tools.team data plan --config /absolute/private/team.toml --spec /absolute/private/dex-dataset.json
 python -m competition_tools.team data acquire --config /absolute/private/team.toml --spec /absolute/private/dex-dataset.json
 python -m competition_tools.team factors --config /absolute/private/team.toml --spec /absolute/private/factor-protocol.json --output-root /absolute/data/new-factor-run
@@ -68,12 +68,12 @@ python -m competition_tools.team factors --config /absolute/private/team.toml --
 ```sh
 python -m competition_tools.team data plan --config /absolute/private/team.toml --spec /absolute/private/dataset.json
 python -m competition_tools.team data acquire --config /absolute/private/team.toml --spec /absolute/private/dataset.json
-python -m competition_tools.team data inspect --config /absolute/private/team.toml --spec /absolute/private/dataset.json --manifest /absolute/data/2026-quant-competition/datasets/spot-study/v1/manifest.json
+python -m competition_tools.team data inspect --config /absolute/private/team.toml --spec /absolute/private/dataset.json --manifest /absolute/data/global-market-research/datasets/spot-study/v1/manifest.json
 ```
 
 `plan` 和 `inspect` 不发起网络请求。`acquire` 默认不启动 Gateway 或登录。只有显式 IBKR 取数可通过 `--ensure-gateway` 和已启用的私有部署使用[Paper 登录前置步骤](../operations/gateway-login.zh-CN.md#数据任务的可选登录前置步骤)。下文独立的 Databento 试点支持事先授权的计费下载。数据工具不下单。输出沿用 `competition.team_result.v1`。日线部分覆盖返回退出码 2 及 `PARTIAL_COVERAGE`。DEX 使用 `PARTIAL_DEX_COVERAGE`，两者都不算下载完成。
 
-数据位于配置的 `DATA_ROOT/2026-quant-competition/datasets/<dataset-id>/<version>/`。原有 v1/v2 数据源成功发布时不覆盖已有版本，未完成的任务保留在 `<version>.partial`，包含 manifest、receipt、请求日志和文件断点。相同规格再次运行时校验已完成文件的哈希并补充缺失下载，规格变化不能复用原断点。上游档案修订需建立新版本重新下载，恢复校验只确认本地保留字节，不能证明上游此后没有修订。Databento 试点使用下文的单次尝试规则。
+数据位于配置的 `DATA_ROOT/global-market-research/datasets/<dataset-id>/<version>/`。原有 v1/v2 数据源成功发布时不覆盖已有版本，未完成的任务保留在 `<version>.partial`，包含 manifest、receipt、请求日志和文件断点。相同规格再次运行时校验已完成文件的哈希并补充缺失下载，规格变化不能复用原断点。上游档案修订需建立新版本重新下载，恢复校验只确认本地保留字节，不能证明上游此后没有修订。Databento 试点使用下文的单次尝试规则。
 
 ## Databento 日线数据试点
 
@@ -83,7 +83,7 @@ python -m competition_tools.team data inspect --config /absolute/private/team.to
 
 上限为 0.10 美元、5 次元数据请求、1 次下载尝试、120 秒总活动时间和 20 MiB 未压缩 HTTP 响应。失败请求及其响应字节也计入限制。工具在下载前检查最新报价、计费字节数、记录数和适用单价，确认保守费用上界。服务端限制最多返回 4,000 条记录。触及限制或记录数不一致时拒绝结果。计费按未压缩二进制数据计算，不能用 CSV 文件大小推算账单。无法证明费用边界时会保留阻塞记录，不能当成免费请求。参见[官方 HTTP API](https://databento.com/docs/api-reference-historical?historical=http)。
 
-所有结果，包括阻塞和部分完成的尝试，均保留在 `databento-us-daily-pilot/20261023-v1/`。固定的 `DATA_ROOT/2026-quant-competition/authorizations/databento-us-2025-pilot.attempt.json` 在预检前占用本轮授权，不随输出目录变化。需将 `WORKSPACE_CONFIG` 设为定义权威 `data_root` 的外部 `workspace.toml`。修改团队输出配置不能重置授权。`download-attempt.json` 表示计费请求可能已经开始。失败或中断后不自动重试。不要删除记录或换目录重复不确定的请求，应先核对保留证据和账户用量。重复采集会被拒绝，离线 `inspect` 则校验文件哈希和请求、规格身份。
+所有结果，包括阻塞和部分完成的尝试，均保留在 `databento-us-daily-pilot/20261023-v1/`。固定的 `DATA_ROOT/global-market-research/authorizations/databento-us-2025-pilot.attempt.json` 在预检前占用本轮授权，不随输出目录变化。需将 `WORKSPACE_CONFIG` 设为定义权威 `data_root` 的外部 `workspace.toml`。修改团队输出配置不能重置授权。`download-attempt.json` 表示计费请求可能已经开始。失败或中断后不自动重试。不要删除记录或换目录重复不确定的请求，应先核对保留证据和账户用量。重复采集会被拒绝，离线 `inspect` 则校验文件哈希和请求、规格身份。
 
 仓库外保留原始 CSV、带日期的证券映射、逐标的标准化 CSV、覆盖报告、日历来源和 `competition.databento_dataset_manifest.v1`。无法证明上市日历时记录 `LISTING_CALENDAR_UNVERIFIED`，缺失观测不填充。价格保持 `raw`，公司行动仍未核验。所有结果均为 `accepted_research=false`，已有正式研究入口仍要求原有来源和复权契约。
 
@@ -139,3 +139,5 @@ CoinPaprika Business 是独立候选数据源。早期本机检查在 TLS 阶段
 刷新需要完整且校验通过的父快照、新版本、保持数据集及产品、起始日期和价格口径不变，并且结束日期不得倒退。刷新将父数据复制到新暂存目录，检查最近五个可用的已收盘交易日，记录父 manifest 哈希，不记录私有路径。重叠区间改变时，重取受影响标的的完整历史。预算不足则保留未完成状态。重叠区间未变也不能排除更早的修订。刷新时保守保留 `last_full_verification`，公司行动及重叠区间外修订仍为 `not_verified`。父数据不会修改，也不更新 latest 指针。v1 `ibkr` 试验和显式启动选项的含义不变，v2 采集不会启动 Gateway 或授权下单。
 
 数据源可能在日历确定休市的日期返回成交量为零、OHLC 完全相同的占位日线。这些记录保留在原始文件中，不计入标准化交易日，并通过 `excluded_non_session_bars` 和 `CLOSED_SESSION_ZERO_VOLUME_FLAT` 记录。休市日若有成交量或价格区间变化，仍会阻止采集。实际观察涉及 2023-07-17，[港交所当日取消了全部交易时段](https://www.hkex.com.hk/News/Market-Communications/2023/2307172news?sc_lang=en)。排除占位记录不等于填充缺失交易日，也不证明公司行动数据正确。
+
+路径示例使用规范名称 `global-market-research`；只有旧目录的安装在[完成有记录的迁移](../operations/data-root-migration.zh-CN.md)前继续使用已选择的根目录。授权保护检查新旧两个位置，移动路径不会产生新的采集预算。

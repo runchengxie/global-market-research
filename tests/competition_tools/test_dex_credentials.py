@@ -142,3 +142,89 @@ def test_reparse_credential_paths_are_rejected(tmp_path):
         pytest.skip("Symlink creation privilege unavailable")
     with pytest.raises(ValueError):
         credentials.load_key(link)
+
+
+def test_canonical_credential_destination_is_supported_without_exposure(
+    tmp_path, capsys
+):
+    source, old, workspace = setup(tmp_path)
+    canonical = old.parents[2] / "global-market-research/providers/dexpaprika.env"
+    assert credentials.migrate_key(source, canonical, workspace) == {
+        "status": "migrated"
+    }
+    assert credentials.load_key(canonical) == "fixture-only"
+    assert source.read_bytes() == b"OTHER=value\r\n# retain\n"
+    assert not old.exists()
+    assert credentials.migrate_key(source, canonical, workspace) == {
+        "status": "already_migrated"
+    }
+    assert "fixture-only" not in str(capsys.readouterr())
+
+
+@pytest.mark.parametrize(
+    "target_name", ["global-market-research", "2026-quant-competition"]
+)
+def test_two_credential_namespaces_require_explicit_reconciliation(
+    tmp_path, target_name
+):
+    source, old, workspace = setup(tmp_path)
+    canonical = old.parents[2] / "global-market-research/providers/dexpaprika.env"
+    target = canonical if target_name == "global-market-research" else old
+    other = old if target == canonical else canonical
+    other.parent.mkdir(parents=True)
+    other.write_bytes(b"DEXPAPRIKA_API_KEY=fixture-only\n")
+    before = source.read_bytes()
+    kept = other.read_bytes()
+    with pytest.raises(ValueError, match="CREDENTIAL_NAMESPACE_CONFLICT"):
+        credentials.migrate_key(source, target, workspace)
+    assert (
+        not target.exists()
+        and source.read_bytes() == before
+        and other.read_bytes() == kept
+    )
+
+
+def test_concurrent_namespace_migrations_cannot_create_two_authorities(
+    tmp_path, monkeypatch
+):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+
+    source, legacy, workspace = setup(tmp_path)
+    canonical = legacy.parents[2] / "global-market-research/providers/dexpaprika.env"
+    entered, release = Event(), Event()
+    original = credentials._secure_write
+
+    def pause_recovery(path, body):
+        if path.name.startswith(".dexpaprika-recovery-"):
+            entered.set()
+            release.wait(20)
+        return original(path, body)
+
+    monkeypatch.setattr(credentials, "_secure_write", pause_recovery)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(credentials.migrate_key, source, canonical, workspace)
+        assert entered.wait(5)
+        second = pool.submit(credentials.migrate_key, source, legacy, workspace)
+        try:
+            with pytest.raises(ValueError, match="CREDENTIAL_MIGRATION_LOCKED"):
+                second.result(timeout=5)
+        finally:
+            release.set()
+        assert first.result(timeout=5) == {"status": "migrated"}
+    assert canonical.exists() and not legacy.exists()
+
+
+def test_unknown_migration_lock_is_not_removed_or_retried(tmp_path):
+    source, destination, workspace = setup(tmp_path)
+    lock = (
+        destination.parents[3]
+        / ".global-market-research-guards/dexpaprika-migration.lock"
+    )
+    lock.parent.mkdir(parents=True)
+    lock.write_bytes(b"unknown previous attempt")
+    before = source.read_bytes()
+    with pytest.raises(ValueError, match="CREDENTIAL_MIGRATION_LOCKED"):
+        credentials.migrate_key(source, destination, workspace)
+    assert lock.read_bytes() == b"unknown previous attempt"
+    assert source.read_bytes() == before and not destination.exists()

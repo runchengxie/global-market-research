@@ -12,7 +12,7 @@ import pytest
 from competition_tools import gateway_launcher as gl
 
 
-def fixture(tmp_path, monkeypatch):
+def fixture(tmp_path, monkeypatch, namespace="2026-quant-competition"):
     code, data, private = [tmp_path / n for n in ("code", "data", "private")]
     for root in (code, data, private):
         root.mkdir()
@@ -27,7 +27,7 @@ def fixture(tmp_path, monkeypatch):
             ]
         )
     )
-    deployment = private / "deployments/2026-quant-competition/ibgateway-paper"
+    deployment = private / f"deployments/{namespace}/ibgateway-paper"
     deployment.mkdir(parents=True)
     tools = private / "tools/ibc"
     tools.mkdir(parents=True)
@@ -47,7 +47,7 @@ def fixture(tmp_path, monkeypatch):
     gateway = private / "tools/gateway/ibgateway/1050/ibgateway.exe"
     gateway.parent.mkdir(parents=True)
     gateway.write_bytes(b"not executable")
-    logs = data / "2026-quant-competition/operations/ibgateway-paper"
+    logs = data / f"{namespace}/operations/ibgateway-paper"
     logs.mkdir(parents=True)
     settings = deployment / "settings"
     settings.mkdir()
@@ -101,7 +101,9 @@ def test_valid_dry_run_is_read_only(tmp_path, monkeypatch):
     assert before == {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
 
 
-def test_verified_archive_shortcut_names_survive_prepare_and_recheck(tmp_path, monkeypatch):
+def test_verified_archive_shortcut_names_survive_prepare_and_recheck(
+    tmp_path, monkeypatch
+):
     path, workspace, cfg = fixture(tmp_path, monkeypatch)
     archive = Path(cfg["release_archive"])
     with zipfile.ZipFile(archive, "a") as release:
@@ -110,7 +112,9 @@ def test_verified_archive_shortcut_names_survive_prepare_and_recheck(tmp_path, m
             (Path(cfg["ibc_directory"]) / name).write_bytes(
                 b"synthetic shortcut, never executed"
             )
-    monkeypatch.setattr(gl, "RELEASE_SHA256", hashlib.sha256(archive.read_bytes()).hexdigest())
+    monkeypatch.setattr(
+        gl, "RELEASE_SHA256", hashlib.sha256(archive.read_bytes()).hexdigest()
+    )
     gl.prepare_launcher(build(path, workspace))
     assert build(path, workspace)["launcher_ready"]
     shortcut = Path(cfg["configured_launcher"]).parent / "runtime/IBC (Gateway).lnk"
@@ -342,3 +346,30 @@ def test_prepare_filesystem_failures_are_redacted(tmp_path, monkeypatch, capsys)
     )
     assert gl.main(args) == 2
     assert "PRIVATE_SECRET" not in str(capsys.readouterr())
+
+
+def test_canonical_namespace_dry_run_preserves_every_file(tmp_path, monkeypatch):
+    path, workspace, cfg = fixture(
+        tmp_path, monkeypatch, namespace="global-market-research"
+    )
+    before = {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
+    spec = build(path, workspace)
+    assert spec["status"]["state"] == "preflight_passed"
+    assert spec["status"]["activation_authorized"] is False
+    assert before == {p: p.read_bytes() for p in tmp_path.rglob("*") if p.is_file()}
+    assert "PRIVATE_" not in json.dumps(spec)
+
+
+def test_canonical_launcher_cannot_mix_legacy_private_ini(tmp_path, monkeypatch):
+    path, workspace, cfg = fixture(
+        tmp_path, monkeypatch, namespace="global-market-research"
+    )
+    old = (
+        tmp_path / "private/deployments/2026-quant-competition/ibgateway-paper/ibc.ini"
+    )
+    old.parent.mkdir(parents=True)
+    old.write_bytes(Path(cfg["ini_path"]).read_bytes())
+    cfg["ini_path"] = str(old)
+    path.write_text(json.dumps(cfg))
+    with pytest.raises(gl.LauncherError, match="PATH_OUTSIDE_OWNER_ROOT"):
+        build(path, workspace)

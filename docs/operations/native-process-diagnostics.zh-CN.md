@@ -7,7 +7,7 @@
 使用已安装的根环境，在仓库根目录运行以下命令。输出路径必须是仓库外尚不存在的绝对路径。
 
 ```powershell
-python -m competition_tools.check_native_process_delivery --output-root D:/data/2026-quant-competition/task-results/process-check --timeout-seconds 10
+python -m competition_tools.check_native_process_delivery --output-root D:/data/global-market-research/task-results/process-check --timeout-seconds 10
 ```
 
 `diagnostic.json` 保存脱敏后的计时和状态。其下的 `native/` 目录在本地保留合成标准输出、错误输出和计时记录。不要公开原始进程输出。`completed` 表示合成子进程成功退出，其余状态分别为 `start_failed`、`child_failed`、`observation_timeout` 和 `outer_timeout`。

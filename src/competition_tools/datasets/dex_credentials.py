@@ -1,6 +1,7 @@
 """Explicit, private single-key migration. Never execute dotenv content."""
 
 import argparse
+from contextlib import contextmanager
 import base64
 import json
 import os
@@ -12,6 +13,7 @@ import tomllib
 import uuid
 
 from competition_tools.team.config import _restrict_file
+from competition_tools.project_storage import CANONICAL, LEGACY
 from .dex_spec import safe_path
 
 ASSIGNMENT = re.compile(rb"^[ \t]*(?:export[ \t]+)?DEXPAPRIKA_API_KEY[ \t]*=")
@@ -123,6 +125,42 @@ def _replace_source(path: Path, expected: bytes, replacement: bytes) -> None:
             temp.unlink()
 
 
+@contextmanager
+def _migration_lock(config):
+    """One private owner lock across both project namespaces; never expire it."""
+    lock = safe_path(config / f".{CANONICAL}-guards/dexpaprika-migration.lock")
+    lock.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+    _restrict_owner(-1, lock.parent, directory=True)
+    try:
+        fd = os.open(lock, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        raise ValueError("CREDENTIAL_MIGRATION_LOCKED") from None
+    owned = os.fstat(fd)
+    state = {"writes_started": False}
+    release = False
+    try:
+        _restrict_owner(fd, lock)
+        os.write(
+            fd, json.dumps({"pid": os.getpid(), "claim": uuid.uuid4().hex}).encode()
+        )
+        os.fsync(fd)
+        try:
+            yield state
+        except ValueError:
+            # A known preflight rejection has not changed credential state.
+            release = not state["writes_started"]
+            raise
+        else:
+            release = True
+    finally:
+        os.close(fd)
+        if release:
+            current = os.stat(safe_path(lock), follow_symlinks=False)
+            if not os.path.samestat(owned, current):
+                raise ValueError("CREDENTIAL_MIGRATION_LOCK_CHANGED")
+            lock.unlink()
+
+
 def migrate_key(source_env: Path, destination: Path, workspace: Path) -> dict:
     try:
         settings = tomllib.loads(safe_path(workspace).read_text(encoding="utf-8-sig"))
@@ -130,42 +168,48 @@ def migrate_key(source_env: Path, destination: Path, workspace: Path) -> dict:
         config = safe_path(settings["config_root"])
         source = safe_path(source_env, external=False)
         target = safe_path(destination)
-        if (
-            source != code / "global-market-research/.env"
-            or target
-            != config / "projects/2026-quant-competition/providers/dexpaprika.env"
-        ):
+        targets = {
+            safe_path(config / "projects" / namespace / "providers/dexpaprika.env")
+            for namespace in (CANONICAL, LEGACY)
+        }
+        if source != code / "global-market-research/.env" or target not in targets:
             raise ValueError("INVALID_MIGRATION_PATH")
-        before = source.read_bytes()
-        key, remaining = _parse(before, allow_missing=True)
-        if target.exists():
-            existing = load_key(target)
-            if key is None:
-                _restrict_owner(-1, target.parent, directory=True)
+        with _migration_lock(config) as lock_state:
+            if any(other.exists() for other in targets if other != target):
+                raise ValueError("CREDENTIAL_NAMESPACE_CONFLICT")
+            before = source.read_bytes()
+            key, remaining = _parse(before, allow_missing=True)
+            if target.exists():
+                existing = load_key(target)
+                if key is None:
+                    _restrict_owner(-1, target.parent, directory=True)
+                    _restrict_owner(-1, target)
+                    for recovery in target.parent.glob(".dexpaprika-recovery-*.env"):
+                        if re.fullmatch(
+                            r"\.dexpaprika-recovery-[a-f0-9]{32}\.env", recovery.name
+                        ):
+                            _restrict_owner(-1, safe_path(recovery))
+                    return {"status": "already_migrated"}
+                if existing != key:
+                    raise ValueError("CREDENTIAL_CONFLICT")
+            elif key is None:
+                raise ValueError("INVALID_CREDENTIAL")
+            lock_state["writes_started"] = True
+            target.parent.mkdir(parents=True, exist_ok=True)
+            # This is the dedicated provider directory, not the shared configuration root.
+            _restrict_owner(-1, target.parent, directory=True)
+            recovery = target.parent / (
+                ".dexpaprika-recovery-" + uuid.uuid4().hex + ".env"
+            )
+            _secure_write(recovery, before)
+            if not target.exists():
+                _secure_write(target, ("DEXPAPRIKA_API_KEY=" + key + "\n").encode())
+            else:
                 _restrict_owner(-1, target)
-                for recovery in target.parent.glob(".dexpaprika-recovery-*.env"):
-                    if re.fullmatch(
-                        r"\.dexpaprika-recovery-[a-f0-9]{32}\.env", recovery.name
-                    ):
-                        _restrict_owner(-1, safe_path(recovery))
-                return {"status": "already_migrated"}
-            if existing != key:
+            if load_key(target) != key:
                 raise ValueError("CREDENTIAL_CONFLICT")
-        elif key is None:
-            raise ValueError("INVALID_CREDENTIAL")
-        target.parent.mkdir(parents=True, exist_ok=True)
-        # This is the dedicated provider directory, not the shared configuration root.
-        _restrict_owner(-1, target.parent, directory=True)
-        recovery = target.parent / (".dexpaprika-recovery-" + uuid.uuid4().hex + ".env")
-        _secure_write(recovery, before)
-        if not target.exists():
-            _secure_write(target, ("DEXPAPRIKA_API_KEY=" + key + "\n").encode())
-        else:
-            _restrict_owner(-1, target)
-        if load_key(target) != key:
-            raise ValueError("CREDENTIAL_CONFLICT")
-        _replace_source(source, before, remaining)
-        return {"status": "migrated"}
+            _replace_source(source, before, remaining)
+            return {"status": "migrated"}
     except (
         OSError,
         KeyError,

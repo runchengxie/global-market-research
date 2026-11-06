@@ -22,9 +22,9 @@ Pass the machine-local `workspace.toml` explicitly. It defines `code_root`, `dat
 
 | Purpose | Location |
 | --- | --- |
-| Launcher JSON, private INI, separate settings, generated launcher/runtime | `CONFIG_ROOT/deployments/2026-quant-competition/ibgateway-paper/` |
+| Launcher JSON, private INI, separate settings, generated launcher/runtime | `CONFIG_ROOT/deployments/global-market-research/ibgateway-paper/` |
 | Original IBC archive and extracted release | An external owner-protected tools directory |
-| Logs | `DATA_ROOT/2026-quant-competition/operations/ibgateway-paper/` |
+| Logs | `DATA_ROOT/global-market-research/operations/ibgateway-paper/` |
 
 Copy [launcher.example.json](../../config/ibgateway-paper/launcher.example.json) and [ibc.example.ini](../../config/ibgateway-paper/ibc.example.ini) privately. Replace every placeholder with an absolute path. Keep `activation_authorized=false`, `retry_limit=0` and a timeout of 30–300 seconds. Credentials are omitted from source templates. If desired, enter `IbLoginId` and `IbPassword` only in the private INI yourself. Never put them in launcher JSON, shell arguments, task XML or a chat. Empty credentials leave manual entry to the Gateway UI.
 
