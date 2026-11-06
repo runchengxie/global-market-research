@@ -99,3 +99,38 @@ def test_interrupted_run_seals_partial_summary(tmp_path, monkeypatch):
     assert summary["status"] == "partial"
     assert len(summary["pending"]) == 1
     assert verify_bundle(tmp_path / "partial")["status"] == "verified"
+
+
+def test_fixed_checkpoint_audit_is_separate_and_reproducible(tmp_path):
+    pytest.importorskip("torch")
+    pytest.importorskip("exchange_calendars")
+    from test_sequence_data import snapshot_fixture
+    from equity_lab.study.sequence.samples import build_samples
+    from equity_lab.study.sequence.protocol import make_folds
+    from equity_lab.study.sequence.runner import run_study
+    from equity_lab.study.sequence.interventions import audit_fitted_models
+
+    snap = snapshot_fixture(tmp_path)
+    samples = build_samples(snap, 5)
+    folds = make_folds(samples, fit=40, validation=20, test=20, minimum_test=10)[:1]
+    parent = tmp_path / "parent"
+    run_study(
+        freeze_schedule(1, seeds=[11], candidates=["dense", "sparse"], epochs=1),
+        snap,
+        samples,
+        folds,
+        parent,
+    )
+    records = audit_fitted_models(snap, parent, tmp_path / "audit")
+    assert len(records) == 14
+    assert {r["intervention"] for r in records} == {
+        "equal",
+        "drop-0",
+        "drop-1",
+        "drop-2",
+        "only-0",
+        "only-1",
+        "only-2",
+    }
+    assert verify_bundle(parent)["status"] == "verified"
+    assert verify_bundle(tmp_path / "audit")["status"] == "verified"

@@ -9,9 +9,12 @@ from .config import freeze_schedule
 
 def main():
     p = argparse.ArgumentParser(__doc__)
-    p.add_argument("command", choices=["plan", "run", "inspect"])
+    p.add_argument("command", choices=["plan", "run", "inspect", "audit"])
     p.add_argument("--manifest", type=Path)
     p.add_argument("--expected-sha256")
+    p.add_argument(
+        "--run", type=Path, help="Sealed parent run for fixed-weight interventions"
+    )
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--smoke", action="store_true")
     group = p.add_mutually_exclusive_group()
@@ -23,8 +26,12 @@ def main():
         default="relative",
     )
     args = p.parse_args()
-    if args.smoke and (args.secondary or args.transformer or args.features != "relative"):
-        p.error("smoke is the fixed primary SPY diagnostic; use separate full secondary stages")
+    if args.smoke and (
+        args.secondary or args.transformer or args.features != "relative"
+    ):
+        p.error(
+            "smoke is the fixed primary SPY diagnostic; use separate full secondary stages"
+        )
     if args.command == "inspect":
         print(json.dumps(verify_bundle(args.output)))
         return
@@ -37,6 +44,14 @@ def main():
     from .config import SECONDARY
 
     snapshot = load_daily_snapshot(args.manifest, args.expected_sha256)
+    if args.command == "audit":
+        if args.run is None:
+            p.error("audit requires --run")
+        from .interventions import audit_fitted_models
+
+        records = audit_fitted_models(snapshot, args.run, args.output)
+        print(json.dumps(dict(status="completed", interventions=len(records))))
+        return
     samples = build_samples(
         snapshot,
         60 if (args.secondary or args.transformer) else 20,

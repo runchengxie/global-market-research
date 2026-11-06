@@ -93,3 +93,18 @@ def test_dense_transformer_has_single_ffn_per_layer():
 
     model = SequenceTransformer(top_k=None)
     assert all(len(ffn.experts) == 1 for ffn in model.ffn)
+
+
+def test_fitted_routing_interventions_hold_weights_fixed():
+    model = SequenceModel(features=3, lookback=5, units=4, top_k=None)
+    model.eval()
+    x = torch.randn(6, 5, 3)
+    before = {name: value.clone() for name, value in model.state_dict().items()}
+    equal = model(x, intervention="equal")
+    assert torch.allclose(equal["weights"], torch.ones(6, 3) / 3)
+    removed = model(x, intervention={"drop": 1})
+    assert removed["processed"][1] == 0
+    assert torch.allclose(removed["weights"].sum(1), torch.ones(6))
+    assert all(
+        torch.equal(value, before[name]) for name, value in model.state_dict().items()
+    )

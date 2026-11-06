@@ -37,13 +37,13 @@ def model_config(name, samples):
         config["units"] = parameter_matched_width(dict(config, experts=3))
     if name == "equal":
         config["equal"] = True
-    if name in ["sparse", "top1", "shared_router", "drop_expert"]:
+    if name in ["sparse", "top1", "shared_router", "two_expert"]:
         config["top_k"] = 1 if name == "top1" else 2
     if name == "shared_encoder":
         config.update(kind="shared_encoder", top_k=2)
     if name == "shared_router":
         config["shared_router"] = True
-    if name == "drop_expert":
+    if name == "two_expert":
         config.update(experts=2, top_k=None)
     if name.startswith("transformer"):
         config = dict(

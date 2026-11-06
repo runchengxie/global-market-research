@@ -19,7 +19,7 @@ SECONDARY = [
     "top1",
     "shared_router",
     "shared_encoder",
-    "drop_expert",
+    "two_expert",
     "transformer_dense",
     "transformer_sparse",
 ]

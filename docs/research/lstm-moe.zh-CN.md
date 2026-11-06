@@ -16,7 +16,7 @@ uv run --locked --extra predictive --extra neural python -m equity_lab.study.seq
 uv run --locked --extra predictive --extra neural python -m equity_lab.study.sequence.cli inspect --output /external/runs/sequence-primary
 ```
 
-目标目录必须不存在。smoke 只跑一个 SPY 切分、一个种子、一个 epoch，用于检查工程流程，不评价模型有效性。主股票面板不使用 SPY 训练。`--secondary` 使用独立配置运行 top-1、共享门控、共享编码器及减少专家，对应 60 日输入；`--transformer` 单独运行 Transformer 对照，不能与 20 日主实验混为同一对照。不连接券商，不采集新数据，不自动优化阈值，也不修改研究验收状态。
+目标目录必须不存在。smoke 只跑一个 SPY 切分、一个种子、一个 epoch，用于检查工程流程，不评价模型有效性。主股票面板不使用 SPY 训练。`--secondary` 使用独立配置运行 top-1、共享门控、共享编码器及双专家架构对照，对应 60 日输入；`--transformer` 单独运行 Transformer 对照，不能与 20 日主实验混为同一对照。不连接券商，不采集新数据，不自动优化阈值，也不修改研究验收状态。
 
 ## 数据与时间
 
@@ -45,3 +45,5 @@ uv run --locked --extra predictive --extra neural python -m equity_lab.study.seq
 独立后续运行：`--secondary` 比较路由变体；`--transformer` 比较单 FFN 与稀疏 Transformer；`--features levels|correlation|kmeans|som` 比较价格水平特征及拟合段筛选。每阶段各有 240 次拟合、6 小时预算。
 
 本机生产构建实测：懒加载图表的完整依赖链约 187 KB（gzip），原来两张 PNG 合计约 120 KB。只有读者加载交互图时才请求图表库。因此这里增加了交互并延后下载，没有缩小冷启动的完整图表体积。数字对应本次构建，不含页面共用资源。
+
+要在不重新训练的情况下检验门控，使用 `audit --run /external/runs/sequence-primary`，传入相同 manifest/摘要并指定新输出目录。先校验模型重载概率，再固定等权、逐一移除专家，以及使用共享输出头逐一探测专家。产物与已封存主运行分开；这些干预与重新训练双专家架构是不同的对照。

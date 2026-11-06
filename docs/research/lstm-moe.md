@@ -16,7 +16,7 @@ uv run --locked --extra predictive --extra neural python -m equity_lab.study.seq
 uv run --locked --extra predictive --extra neural python -m equity_lab.study.sequence.cli inspect --output /external/runs/sequence-primary
 ```
 
-All output destinations must be new. The smoke is one SPY fold, one seed and one epoch; it verifies engineering behavior, not a model's effectiveness. Primary panel fitting excludes SPY. `--secondary` runs separately declared top-1, shared-router, shared-encoder and removed-expert variants with a 60-session input; `--transformer` runs the Transformer comparison; its results are secondary rather than interchangeable with the 20-session primary suite. No broker connection, acquisition, automatic threshold optimization or research promotion occurs.
+All output destinations must be new. The smoke is one SPY fold, one seed and one epoch; it verifies engineering behavior, not a model's effectiveness. Primary panel fitting excludes SPY. `--secondary` runs separately declared top-1, shared-router, shared-encoder and two-expert architecture controls with a 60-session input; `--transformer` runs the Transformer comparison; its results are secondary rather than interchangeable with the 20-session primary suite. No broker connection, acquisition, automatic threshold optimization or research promotion occurs.
 
 ## Data and time
 
@@ -45,3 +45,5 @@ See the [full design](../superpowers/specs/2026-11-06-lstm-moe-integration-desig
 Additional declared runs: `--secondary` (routing variants), `--transformer` (single-FFN versus sparse Transformer), and `--features levels|correlation|kmeans|som` (price-level and fit-only selector ablations). Each stage has a separate 240-fit / 6-hour budget.
 
 Measured local production build: the lazily loaded chart dependency closure is approximately 187 KB gzip, versus about 120 KB for the two original PNGs. The chart library is not requested until the reader loads the interactive chart. This improves interaction and defers download; it does not reduce a cold full-chart payload. Sizes are build-specific and exclude common page assets.
+
+To test fitted routing without retraining, use `audit --run /external/runs/sequence-primary` with the same manifest/hash and a new output directory. This verifies checkpoint probabilities, then fixes equal weights, drops each expert in turn and probes each expert with the shared head. Outputs are separate from the sealed parent. These interventions are distinct from retraining a two-expert architecture.

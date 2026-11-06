@@ -62,7 +62,7 @@ class SequenceModel(nn.Module):
         )
         self.head = nn.Linear(lookback * units, 1)
 
-    def forward(self, windows):
+    def forward(self, windows, intervention=None):
         context = (
             self.router_encoder(windows)[0][:, -1]
             if self.router_encoder
@@ -70,6 +70,28 @@ class SequenceModel(nn.Module):
         )
         probabilities = self.router(context).softmax(-1)
         weights = routing(probabilities, self.config["top_k"], self.config["equal"])
+        if intervention == "equal":
+            weights = torch.ones_like(weights) / weights.shape[1]
+        elif isinstance(intervention, dict):
+            if set(intervention) == {"drop"}:
+                index = intervention["drop"]
+                if type(index) is not int or not 0 <= index < len(self.experts):
+                    raise ValueError("INVALID_INTERVENTION")
+                weights = weights.clone()
+                weights[:, index] = 0
+                # A sparse route may lose all selected mass. Explicitly zero its
+                # representation; never silently route it to an unchosen expert.
+                weights = weights / weights.sum(1, keepdim=True).clamp_min(1e-9)
+            elif set(intervention) == {"only"}:
+                index = intervention["only"]
+                if type(index) is not int or not 0 <= index < len(self.experts):
+                    raise ValueError("INVALID_INTERVENTION")
+                weights = torch.zeros_like(weights)
+                weights[:, index] = 1
+            else:
+                raise ValueError("INVALID_INTERVENTION")
+        elif intervention is not None:
+            raise ValueError("INVALID_INTERVENTION")
         combined = windows.new_zeros(
             (len(windows), self.config["lookback"] * self.config["units"])
         )
