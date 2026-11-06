@@ -50,3 +50,10 @@
 - [ ] Independently review; fix substantive issues and rerun required affected evidence.
 - [ ] Push/open PR with authorized aggregates and truthful status; all checks against current main; integrate and verify main/Pages.
 - [ ] Retain inputs/results/runtimes and cleanup only this task's branch/worktree; report actual gate outcomes and blockers.
+
+### Task5: User-directed research page and grain inventory
+- [ ] Inspect provider-owned retained metadata only; record grain/coverage/availability gaps separately from service capabilities.
+- [ ] Create strict aggregate-only `site/src/data/sequence-research.v1.json` from completed authorized summaries and code-derived architecture; reject raw/private series in `site/src/lib/sequence-research.mjs` tests before implementation.
+- [ ] Add locale catalogs and a `SequenceEvidence.astro` component with architecture exploration, stage records, real aggregate plots/tables and visible caveats; retain separately labeled synthetic demo.
+- [ ] Add bilingual mobile/theme/keyboard/no-JS/browser tests, update Pages allowlist, build and full site validation.
+- [ ] Complete final review/integration/retention as Task4; no crypto fits or acquisition implied by grain discussion.
