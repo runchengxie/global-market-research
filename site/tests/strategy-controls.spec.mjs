@@ -81,9 +81,9 @@ for(const locale of ['en','zh-CN'])test(`${locale}: new controls separate comple
  if(snapshot.status==='readiness_only')await panel.screenshot({path:testInfo.outputPath('readiness-mobile.png')});
  expect(JSON.parse(await panel.getAttribute('data-controls-facts'))).toEqual(snapshot);expect(errors).toEqual([]);
 });
-test('new controls remain readable without JavaScript',async({browser})=>{
- const context=await browser.newContext({javaScriptEnabled:false});const page=await context.newPage();
- await page.goto('http://127.0.0.1:4397/global-market-research/strategies/');
+test('new controls remain readable without JavaScript',async({browser,baseURL})=>{
+ const context=await browser.newContext({javaScriptEnabled:false,baseURL});const page=await context.newPage();
+ await page.goto('/global-market-research/strategies/');
  const panel=page.locator('#strategy-controls');await expect(panel.locator('[data-controls-conclusion]')).toBeVisible();
  await expect(panel.locator('[data-controls-result]')).toHaveCount(snapshot.results.length);
  await expect(page.locator('#strategy-readiness')).toBeVisible();await context.close();

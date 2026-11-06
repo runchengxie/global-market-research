@@ -47,3 +47,5 @@ Additional declared runs: `--secondary` (routing variants), `--transformer` (sin
 Measured local production build: the lazily loaded chart dependency closure is approximately 187 KB gzip, versus about 120 KB for the two original PNGs. The chart library is not requested until the reader loads the interactive chart. This improves interaction and defers download; it does not reduce a cold full-chart payload. Sizes are build-specific and exclude common page assets.
 
 To test fitted routing without retraining, use `audit --run /external/runs/sequence-primary` with the same manifest/hash and a new output directory. This verifies checkpoint probabilities, then fixes equal weights, drops each expert in turn and probes each expert with the shared head. Outputs are separate from the sealed parent. These interventions are distinct from retraining a two-expert architecture.
+
+See [frozen-model diagnostics and the private browser](sequence-diagnostics.md) for probability, exposure, risk and data-evidence exploration.

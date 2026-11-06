@@ -45,10 +45,10 @@ test("invalid or unavailable storage still permits a usable theme selector", asy
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(23, 27, 32)");
 });
 
-test("without JavaScript the system palette remains readable", async ({ browser }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false, colorScheme: "dark" });
+test("without JavaScript the system palette remains readable", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, colorScheme: "dark", baseURL });
   const page = await context.newPage();
-  await page.goto(`http://127.0.0.1:4397${base}`);
+  await page.goto(`${base}`);
   await expect(page.locator("body")).toHaveCSS("background-color", "rgb(23, 27, 32)");
   await expect(page.locator("#theme-preference")).toBeHidden();
   await context.close();

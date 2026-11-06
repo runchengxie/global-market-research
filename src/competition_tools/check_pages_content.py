@@ -196,6 +196,7 @@ def _allowed_source(relative_path: PurePosixPath) -> bool:
         "src/scripts/sequence-chart.mjs",
         "tests/sequence-summary.test.mjs",
         "tests/sequence.spec.mjs",
+        "tests/sequence-local.spec.mjs",
         "tests/us-cnn.spec.mjs",
         "tests/us-cnn-summary.test.mjs",
         "src/scripts/cnn-topic-chart.mjs",

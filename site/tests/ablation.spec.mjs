@@ -39,9 +39,9 @@ for(const locale of ["en","zh-CN"]){
   expect(errors).toEqual([]);
  });
 }
-test("no JavaScript retains every ablation fact and explicit evidence label",async({browser})=>{
- const context=await browser.newContext({javaScriptEnabled:false});const page=await context.newPage();
- await page.goto("http://127.0.0.1:4397/global-market-research/strategies/");
+test("no JavaScript retains every ablation fact and explicit evidence label",async({browser,baseURL})=>{
+ const context=await browser.newContext({javaScriptEnabled:false,baseURL});const page=await context.newPage();
+ await page.goto("/global-market-research/strategies/");
  const root=page.locator("#ablation");await expect(root.getByText("Post-hoc diagnostic",{exact:true}).first()).toBeVisible();
  const snapshot=JSON.parse(await readFile(new URL("../src/data/ablation-study.v1.json",import.meta.url),"utf8"));
  await expect(root.locator("[data-ablation-id]")).toHaveCount(snapshot.results.length);

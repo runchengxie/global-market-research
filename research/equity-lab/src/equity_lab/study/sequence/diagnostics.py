@@ -108,6 +108,7 @@ def _clock_frame(samples, indices, fold, probability):
 def diagnose_run(snapshot, parent, output, seconds=1800):
     if type(seconds) is not int or not 1 <= seconds <= 1800:
         raise ValueError("INVALID_DIAGNOSTIC_BUDGET")
+    deadline = time.monotonic() + seconds
     parent, output = Path(parent), Path(output)
     if output.resolve().is_relative_to(
         parent.resolve()
@@ -118,6 +119,7 @@ def diagnose_run(snapshot, parent, output, seconds=1800):
     ):
         raise ValueError("OUTPUT_MUST_BE_EXTERNAL")
     verify_bundle(parent)
+    parent_digest = digest(parent / "checksums.json")
     source = strict_json(parent / "config.json")
     summary = strict_json(parent / "summary.json")
     if summary["status"] != "completed" or source["inputs"] != snapshot.bindings:
@@ -149,7 +151,7 @@ def diagnose_run(snapshot, parent, output, seconds=1800):
         dict(
             schema="equity_lab.sequence_diagnostics.v1",
             source=source_identity(),
-            parent_checksums_sha256=digest(parent / "checksums.json"),
+            parent_checksums_sha256=parent_digest,
             accepted_research=False,
             seconds=seconds,
             costs=[0, 5, 20, 40],
@@ -163,11 +165,10 @@ def diagnose_run(snapshot, parent, output, seconds=1800):
     )
     (output / "accounts").mkdir()
     records = []
-    deadline = time.monotonic() + seconds
     result = dict(
         schema="equity_lab.sequence_diagnostics.v1",
         provenance=dict(
-            parent_checksums_sha256=digest(parent / "checksums.json"),
+            parent_checksums_sha256=parent_digest,
             data_manifest_sha256=snapshot.bindings["manifest.json"]["sha256"],
             code_revision=source_identity()["revision"],
         ),
@@ -176,11 +177,14 @@ def diagnose_run(snapshot, parent, output, seconds=1800):
         pending=len(summary["completed"]),
         reason=None,
     )
+
+    def check_budget():
+        if time.monotonic() >= deadline:
+            raise TimeoutError("WALL_CLOCK_BUDGET")
+
     try:
         for index, task in enumerate(summary["completed"]):
-            if time.monotonic() >= deadline:
-                result.update(status="partial", reason="WALL_CLOCK_BUDGET")
-                break
+            check_budget()
             directory = parent / f"{index:04d}-{task['model']}"
             saved = pd.read_csv(directory / "predictions.csv")
             fold = folds[task["fold"]]
@@ -192,7 +196,9 @@ def diagnose_run(snapshot, parent, output, seconds=1800):
                 samples.audit.iloc[fold["test"]].target.to_numpy(),
             ):
                 raise ValueError("TEST_TARGET_MISMATCH")
+            check_budget()
             val_p = _scores(directory, samples, fold["validation"])
+            check_budget()
             val = _clock_frame(samples, fold["validation"], fold, val_p)
             test = _clock_frame(samples, fold["test"], fold, test_p)
             test["signal_ts"] = test.available_ts.clip(
@@ -234,7 +240,9 @@ def diagnose_run(snapshot, parent, output, seconds=1800):
             record["dates"] = sorted(test.exit_session.unique())
             allocations = {"original": (test_p > 0.5).astype(float)}
             if task["model"] in FAMILIES:
+                check_budget()
                 threshold, grid = choose_threshold(val)
+                check_budget()
                 control = validation_controls(val)
                 record.update(
                     selected_threshold=threshold,
@@ -255,10 +263,28 @@ def diagnose_run(snapshot, parent, output, seconds=1800):
                 rows["allocation"] = weights
                 record["accounts"][name] = {}
                 for fee in [0, 5, 20, 40]:
+                    check_budget()
                     account = replay_allocations(rows, fee)
+                    check_budget()
                     account["realized_annual_volatility"] = realized_volatility(account)
-                    account["exposure_gap_to_model"] = float(
+                    account["target_exposure_gap_to_model"] = float(
                         weights.mean() - (test_p > 0.5).mean()
+                    )
+                    original = record["accounts"].get("original", {}).get(str(fee))
+                    realized_exposure = float(
+                        np.mean([m["open_exposure"] for m in account["marks"]])
+                    )
+                    account["realized_mean_open_exposure"] = realized_exposure
+                    account["realized_exposure_gap_to_model"] = (
+                        realized_exposure - original["realized_mean_open_exposure"]
+                        if original
+                        else 0.0
+                    )
+                    account["realized_volatility_gap_to_model"] = (
+                        account["realized_annual_volatility"]
+                        - original["realized_annual_volatility"]
+                        if original
+                        else 0.0
                     )
                     write_json(
                         output / "accounts" / f"{index:04d}-{name}-{fee}.json",
@@ -290,7 +316,10 @@ def diagnose_run(snapshot, parent, output, seconds=1800):
                 flush=True,
             )
         else:
+            check_budget()
             result["status"] = "completed"
+    except TimeoutError:
+        result.update(status="partial", reason="WALL_CLOCK_BUDGET")
     except KeyboardInterrupt:
         result.update(status="partial", reason="INTERRUPTED")
     except Exception as exc:
@@ -300,11 +329,15 @@ def diagnose_run(snapshot, parent, output, seconds=1800):
         try:
             snapshot.verify()
             verify_bundle(parent)
-        except ValueError:
+            if digest(parent / "checksums.json") != parent_digest:
+                raise ValueError("PARENT_CHANGED")
+        except (ValueError, OSError):
             result.update(status="invalid", reason="INPUT_CHANGED")
         write_json(output / "summary.json", result)
         from .viewer import write_viewer
 
-        write_viewer(result, output / "browser.html")
-        seal_bundle(output)
+        try:
+            write_viewer(result, output / "browser.html")
+        finally:
+            seal_bundle(output)
     return result

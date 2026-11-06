@@ -57,7 +57,16 @@ def main():
             p.error("diagnose requires --run")
         from .diagnostics import diagnose_run
 
-        report = diagnose_run(snapshot, args.run, args.output)
+        import signal
+
+        def interrupted_diagnostic(signum, frame):
+            raise KeyboardInterrupt
+
+        previous = signal.signal(signal.SIGTERM, interrupted_diagnostic)
+        try:
+            report = diagnose_run(snapshot, args.run, args.output)
+        finally:
+            signal.signal(signal.SIGTERM, previous)
         print(json.dumps(dict(status=report["status"], records=len(report["records"]))))
         if report["status"] != "completed":
             raise SystemExit(2)
