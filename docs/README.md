@@ -20,6 +20,7 @@ Start with the [offline quickstart](operations/team-quickstart.md) if you have n
 | Review strategy ideas | [Strategy analysis](strategy/strategy-analysis.md), [competition analysis](competition/competition-analysis.md) |
 | Configure credentials or data providers | [Private configuration and providers](operations/environment-and-providers.md) |
 | Set up a Paper account workflow | [Gateway setup](operations/gateway-login.md), [release checks](operations/release-checks.md) |
+| Calculate or recover a bounded Paper allocation | [Paper allocation](operations/paper-allocation.md) |
 | Close a task and retain its evidence | [Artifact retention](operations/artifact-retention.md) |
 | Change code or build the website | [Development guide](development.md) |
 
