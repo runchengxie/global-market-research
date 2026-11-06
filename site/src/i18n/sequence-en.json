@@ -1,0 +1,33 @@
+{
+  "title": "LSTM and mixture-of-experts research",
+  "stage": "EXPLORATORY · OFFLINE",
+  "intro": "Does learned expert routing improve prediction or simulated net performance over a comparable single model?",
+  "notice": "The interactive chart below is a synthetic interface demonstration. It is not a market-data backtest or evidence of profit.",
+  "data": "Existing input: 10 US stocks and SPY, 953 sessions from January 2023 to October 2026. The retained snapshot is split adjusted, excludes dividends, uses a fixed current universe and has previously been examined. Research acceptance and publication rights remain unverified.",
+  "timing": "Signals use information available after the close. Hypothetical entry is the next session’s open and exit is the following open. Labels and training cutoffs follow those timestamps; class 0 means cash.",
+  "chart": "Explore a synthetic equity path",
+  "load": "Load interactive chart",
+  "failed": "Chart unavailable. The data table remains available below.",
+  "method": "Model",
+  "names": {
+    "cash": "Cash",
+    "holding": "Holding",
+    "dense": "Dense LSTM MoE",
+    "sparse": "Dispatched top-2 LSTM MoE"
+  },
+  "date": "Illustrative session",
+  "equity": "Equity",
+  "table": "Synthetic values and accessible chart alternative",
+  "protocol": "What the study compares",
+  "models": "Logistic regression, a small LSTM, a parameter-matched LSTM, equal-weight experts, independent ensembles, learned dense routing and real top-2 dispatch. Transformer and routing ablations are separate experiments.",
+  "audit": "Each run retains its dates, probabilities, model and scaler, router loads, costs, account marks, configuration and checksums. Repeated seeds and rolling folds remain paired; incomplete runs are labeled partial.",
+  "limitations": "A successful pipeline is not a profitable strategy. Retrospective results cannot become an untouched holdout, and zero trades must be visible.",
+  "docs": "Protocol and commands",
+  "source": "Source package",
+  "migration": "This is the new home for the moe-lstm project. The original repository and historical artifacts remain available.",
+  "old": "Original project",
+  "fold": "Demonstration fold",
+  "seed": "Demonstration seed",
+  "confusion": "Confusion matrix",
+  "cmnote": "Confusion matrices use ordinary accessible tables in run reports. No measured confusion counts are invented for this interface fixture."
+}
