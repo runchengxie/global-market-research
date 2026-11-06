@@ -42,7 +42,7 @@ python -m competition_tools.evaluation.sequence_governance \
   --start YYYY-MM-DD --end YYYY-MM-DD --output '<new-external-directory>'
 ```
 
-Its evidence crosswalk preserves six blockers: original-source provenance, availability time, corporate actions, point-in-time universe, publication rights and untouched evaluation evidence. A future protocol is a draft requiring owner review and independent evidence. Both acceptance and execution authorization stay false. The command neither reserves a test nor schedules data collection. The draft fixes candidate scope, dates, costs, selection and stopping rules; it does not turn previously inspected dates into unseen data.
+Its evidence crosswalk preserves six blockers: point-in-time universe, historical security identity, corporate-action coverage, historical availability, owner provenance (including source-use/publication rights), and holdout governance. A future protocol is a draft requiring owner review and independent evidence. Both acceptance and execution authorization stay false. The command neither reserves a test nor schedules data collection. The draft fixes candidate scope, dates, costs, selection and stopping rules; it does not turn previously inspected dates into unseen data.
 
 ## Maintenance evidence
 
