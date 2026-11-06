@@ -30,18 +30,31 @@ def test_bundle_is_exclusive_and_detects_corruption(tmp_path):
 
 
 def test_installed_synthetic_run_roundtrip(tmp_path):
-    pytest.importorskip('torch')
+    pytest.importorskip("torch")
     from test_sequence_data import snapshot_fixture
     from equity_lab.study.sequence.samples import build_samples
     from equity_lab.study.sequence.protocol import make_folds
     from equity_lab.study.sequence.runner import run_study
+
     snap = snapshot_fixture(tmp_path)
     samples = build_samples(snap, 5)
     folds = make_folds(samples, fit=40, validation=20, test=20, minimum_test=10)[:1]
-    schedule = freeze_schedule(1, seeds=[11], candidates=['cash','holding','sparse'], epochs=1, seconds=600)
-    out = tmp_path/'run'
+    schedule = freeze_schedule(
+        1, seeds=[11], candidates=["cash", "holding", "sparse"], epochs=1, seconds=600
+    )
+    out = tmp_path / "run"
     summary = run_study(schedule, snap, samples, folds, out)
-    assert summary['status'] == 'completed'
-    assert len(summary['completed']) == 3
-    assert summary['completed'][0]['zero_trade'] is True
-    assert verify_bundle(out)['files'] > 10
+    assert summary["status"] == "completed"
+    assert len(summary["completed"]) == 3
+    assert summary["completed"][0]["zero_trade"] is True
+    assert verify_bundle(out)["files"] > 10
+
+
+def test_code_identity_is_bound_to_installed_module_not_cwd(tmp_path, monkeypatch):
+    from equity_lab.study.sequence.artifacts import source_identity
+
+    before = source_identity()
+    monkeypatch.chdir(tmp_path)
+    after = source_identity()
+    assert before == after
+    assert len(after["files"]) > 10

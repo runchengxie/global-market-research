@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
+
 pytest.importorskip("exchange_calendars")
 
 from equity_lab.data import sequence_daily as daily  # noqa: E402
@@ -109,3 +110,10 @@ def test_folds_purge_equal_cutoff_and_readiness(tmp_path):
         assert (a.iloc[fold.test].entry_ts > fold.ready_ts).all()
         assert set(fold.fit).isdisjoint(fold.test)
         assert len(set(a.iloc[fold.test].feature_end)) >= 10
+
+
+def test_invalid_stock_features_cannot_shrink_pool(tmp_path):
+    snap = snapshot_fixture(tmp_path)
+    snap.frames["MSFT"]["volume"] = 0
+    with pytest.raises(ValueError, match="FEATURE"):
+        build_samples(snap, 5)

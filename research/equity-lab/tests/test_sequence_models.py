@@ -57,3 +57,39 @@ def test_transformer_dispatch_and_shape():
     assert out["logits"].shape == (2,)
     assert np.isfinite(out["logits"].detach().numpy()).all()
     assert sum(out["processed"]) == 2 * 60 * 2 * 2
+
+
+def test_original_five_by_fifteen_dense_matches_manual_lstm():
+    # Independent recurrence checks full sequence flattening and representation mixing.
+    torch.manual_seed(23)
+    model = SequenceModel(features=15, lookback=5, units=3, top_k=None)
+    x = torch.randn(2, 5, 15)
+    paths = []
+    for expert in model.experts:
+        h = torch.zeros(2, 3)
+        c = torch.zeros(2, 3)
+        trajectory = []
+        for day in range(5):
+            gates = (
+                x[:, day] @ expert.weight_ih_l0.T
+                + h @ expert.weight_hh_l0.T
+                + expert.bias_ih_l0
+                + expert.bias_hh_l0
+            )
+            i, f, g, o = gates.chunk(4, dim=-1)
+            c = f.sigmoid() * c + i.sigmoid() * g.tanh()
+            h = o.sigmoid() * c.tanh()
+            trajectory.append(h)
+        paths.append(torch.stack(trajectory, dim=1).flatten(1))
+    weights = model.router(x[:, -1]).softmax(-1)
+    expected = model.head((torch.stack(paths, 1) * weights[:, :, None]).sum(1)).squeeze(
+        -1
+    )
+    assert torch.allclose(model(x)["logits"], expected, atol=1e-6)
+
+
+def test_dense_transformer_has_single_ffn_per_layer():
+    from equity_lab.models.sequence.transformer import SequenceTransformer
+
+    model = SequenceTransformer(top_k=None)
+    assert all(len(ffn.experts) == 1 for ffn in model.ffn)

@@ -10,6 +10,10 @@ def build_model(config):
         from .lstm import SequenceModel
 
         return SequenceModel(**config)
+    if kind == "shared_encoder":
+        from .shared import SharedEncoderMoE
+
+        return SharedEncoderMoE(**config)
     if kind == "transformer":
         from .transformer import SequenceTransformer
 

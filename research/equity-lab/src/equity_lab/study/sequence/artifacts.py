@@ -47,3 +47,24 @@ def verify_bundle(path):
         ):
             raise ValueError("BUNDLE_INTEGRITY_FAILED")
     return dict(files=len(inventory), status="verified")
+
+
+def source_identity():
+    import subprocess
+
+    package = Path(__file__).resolve().parents[2]
+    files = {
+        str(p.relative_to(package)): digest(p) for p in sorted(package.rglob("*.py"))
+    }
+    try:
+        revision = subprocess.check_output(
+            ["git", "-C", str(package), "rev-parse", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        dirty = subprocess.check_output(
+            ["git", "-C", str(package), "status", "--porcelain"], text=True
+        ).strip()
+    except subprocess.CalledProcessError:
+        revision, dirty = None, None
+    return dict(revision=revision, dirty=dirty, files=files)

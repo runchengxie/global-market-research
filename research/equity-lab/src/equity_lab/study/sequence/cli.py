@@ -14,7 +14,14 @@ def main():
     p.add_argument("--expected-sha256")
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--smoke", action="store_true")
-    p.add_argument("--secondary", action="store_true")
+    group = p.add_mutually_exclusive_group()
+    group.add_argument("--secondary", action="store_true")
+    group.add_argument("--transformer", action="store_true")
+    p.add_argument(
+        "--features",
+        choices=["relative", "levels", "correlation", "kmeans", "som"],
+        default="relative",
+    )
     args = p.parse_args()
     if args.command == "inspect":
         print(json.dumps(verify_bundle(args.output)))
@@ -29,7 +36,10 @@ def main():
 
     snapshot = load_daily_snapshot(args.manifest, args.expected_sha256)
     samples = build_samples(
-        snapshot, 60 if args.secondary else 20, symbols=["SPY"] if args.smoke else None
+        snapshot,
+        60 if (args.secondary or args.transformer) else 20,
+        symbols=["SPY"] if args.smoke else None,
+        feature_mode="relative" if args.features == "relative" else "levels",
     )
     folds = make_folds(samples)
     if args.smoke:
@@ -39,12 +49,21 @@ def main():
         seeds=[11] if args.smoke else None,
         candidates=["cash", "holding", "sparse"]
         if args.smoke
-        else SECONDARY
+        else ["matched", "equal", "dense", "sparse"]
+        if args.features != "relative"
+        else ["matched", "equal", "transformer_dense", "transformer_sparse"]
+        if args.transformer
+        else [n for n in SECONDARY if not n.startswith("transformer")]
         if args.secondary
         else None,
-        max_fits=240 if args.secondary else 600,
+        max_fits=240
+        if (args.secondary or args.transformer or args.features != "relative")
+        else 600,
         seconds=600 if args.smoke else 21600,
         epochs=1 if args.smoke else 50,
+    )
+    schedule["selector"] = (
+        args.features if args.features in ["correlation", "kmeans", "som"] else "all"
     )
     if args.command == "plan":
         if args.output.exists():

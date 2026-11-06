@@ -4,11 +4,10 @@ import copy
 import importlib.metadata
 import json
 import platform
-import subprocess
 import time
 from pathlib import Path
 import numpy as np
-from .artifacts import create_bundle, seal_bundle, write_json
+from .artifacts import create_bundle, seal_bundle, write_json, source_identity
 from .account import replay_sequence
 from .metrics import classification, paired_report
 
@@ -40,6 +39,8 @@ def model_config(name, samples):
         config["equal"] = True
     if name in ["sparse", "top1", "shared_router", "drop_expert"]:
         config["top_k"] = 1 if name == "top1" else 2
+    if name == "shared_encoder":
+        config.update(kind="shared_encoder", top_k=2)
     if name == "shared_router":
         config["shared_router"] = True
     if name == "drop_expert":
@@ -69,6 +70,7 @@ def _fit_neural(name, samples, x, fold, seed, schedule, directory, deadline):
     xt = torch.tensor(x)
     best, best_loss, stale, history = None, float("inf"), 0, []
     started = time.monotonic()
+    train_processed = None
     for epoch in range(schedule["epochs"]):
         _check(deadline)
         model.train()
@@ -77,6 +79,9 @@ def _fit_neural(name, samples, x, fold, seed, schedule, directory, deadline):
         for batch in order.split(schedule["batch_size"]):
             _check(deadline)
             out = model(xt[batch])
+            if train_processed is None:
+                train_processed = [0] * len(out["processed"])
+            train_processed = [a + b for a, b in zip(train_processed, out["processed"])]
             task_loss = torch.nn.functional.binary_cross_entropy_with_logits(
                 out["logits"], y[batch]
             )
@@ -121,6 +126,27 @@ def _fit_neural(name, samples, x, fold, seed, schedule, directory, deadline):
             before = time.monotonic()
             out = model(xt[fold.test])
             timings.append(time.monotonic() - before)
+    groups = (
+        [model.experts] if hasattr(model, "experts") else [f.experts for f in model.ffn]
+    )
+    expert_parameters = [
+        sum(p.numel() for p in e.parameters()) for group in groups for e in group
+    ]
+    total_parameters = sum(p.numel() for p in model.parameters())
+    denominator = len(fold.test) * (
+        samples.x.shape[1] if config["kind"] == "transformer" else 1
+    )
+    active_parameters = (
+        total_parameters
+        - sum(expert_parameters)
+        + sum(c * n / denominator for c, n in zip(out["processed"], expert_parameters))
+    )
+    try:
+        import resource
+
+        peak_rss_bytes = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
+    except ImportError:
+        peak_rss_bytes = None
     save_checkpoint(
         model, directory / "model.pt", dict(seed=seed, feature_order=samples.features)
     )
@@ -138,7 +164,13 @@ def _fit_neural(name, samples, x, fold, seed, schedule, directory, deadline):
             fit_seconds=fit_seconds,
             inference_seconds=timings,
             warmup_calls=1,
-            parameters=sum(p.numel() for p in model.parameters()),
+            parameters=total_parameters,
+            mean_active_parameters=active_parameters,
+            active_parameter_unit="token"
+            if config["kind"] == "transformer"
+            else "window",
+            peak_process_rss_bytes=peak_rss_bytes,
+            training_processed=train_processed,
             processed=warm["processed"],
             thread_count=2,
             deterministic=True,
@@ -148,6 +180,21 @@ def _fit_neural(name, samples, x, fold, seed, schedule, directory, deadline):
 
 
 def fit_prediction(name, samples, fold, seed, schedule, directory, deadline):
+    from .selection import select_features
+    from .samples import SampleSet
+
+    chosen = select_features(samples.x, fold.fit, schedule.get("selector", "all"))
+    samples = SampleSet(
+        samples.x[:, :, chosen], samples.audit, [samples.features[i] for i in chosen]
+    )
+    write_json(
+        directory / "selected-features.json",
+        dict(
+            indices=chosen,
+            names=samples.features,
+            selector=schedule.get("selector", "all"),
+        ),
+    )
     a = samples.audit
     x = samples.x
     # Pooled fit-window statistics; no validation/test row enters scaling.
@@ -226,9 +273,7 @@ def run_study(schedule, snapshot, samples, folds, output):
         accepted_research=False,
         synthetic_price_units=True,
         dividends=False,
-        source_revision=subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], text=True
-        ).strip(),
+        source_revision=source_identity(),
         limitations=[
             "fixed_current",
             "previously_exposed",
@@ -262,6 +307,7 @@ def run_study(schedule, snapshot, samples, folds, output):
         status="running", completed=[], pending=list(schedule["tasks"]), reason=None
     )
     paired = []
+    net_paired = []
     try:
         snapshot.verify()
         for index, task in enumerate(schedule["tasks"]):
@@ -282,12 +328,31 @@ def run_study(schedule, snapshot, samples, folds, output):
             audit["probability"] = probabilities
             audit["prediction"] = (probabilities > 0.5).astype(int)
             audit["model_ready_ts"] = fold.ready_ts
+            audit["signal_ts"] = audit.available_ts.clip(lower=fold.ready_ts)
+            if not (audit.signal_ts < audit.entry_ts).all():
+                raise ValueError("MODEL_NOT_READY_FOR_ENTRY")
             audit.to_csv(directory / "predictions.csv", index=False)
             scores = classification(audit.target, probabilities)
             accounts = {}
             for fee in [0, 5, 20, 40]:
                 account = replay_sequence(audit, fee)
                 write_json(directory / f"account-{fee}.json", account)
+                for mark_index, mark in enumerate(account["marks"]):
+                    previous = (
+                        account["marks"][mark_index - 1]["equity"]
+                        if mark_index
+                        else 1.0
+                    )
+                    net_paired.append(
+                        dict(
+                            fold=task["fold"],
+                            seed=task["seed"],
+                            date=mark["date"],
+                            model=task["model"],
+                            fee=fee,
+                            value=mark["equity"] / previous - 1,
+                        )
+                    )
                 accounts[fee] = {
                     k: v for k, v in account.items() if k not in ["marks", "fills"]
                 }
@@ -337,7 +402,24 @@ def run_study(schedule, snapshot, samples, folds, output):
         write_json(output / "summary.json", summary)
         write_json(
             output / "paired-brier.json",
-            paired_report(paired, reference="matched") if paired else {},
+            {
+                ref: paired_report(paired, reference=ref) if paired else {}
+                for ref in ["matched", "equal"]
+            },
+        )
+        write_json(
+            output / "paired-net.json",
+            {
+                str(fee): {
+                    ref: paired_report(
+                        [r for r in net_paired if r["fee"] == fee], reference=ref
+                    )
+                    if net_paired
+                    else {}
+                    for ref in ["matched", "equal"]
+                }
+                for fee in [0, 5, 20, 40]
+            },
         )
         seal_bundle(output)
     return summary

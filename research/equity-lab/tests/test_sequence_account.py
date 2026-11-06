@@ -55,3 +55,17 @@ def test_paired_resampling_preserves_fold_boundaries():
     report = paired_report(records, reference="a", draws=40)
     assert report["b"]["difference"] == 1
     assert report["b"]["interval"] == [1.0, 1.0]
+
+
+def test_repeated_seeds_do_not_multiply_market_information():
+    records = [
+        dict(fold=0, seed=11, date=d, model=m, value=0 if m == "a" else float(d))
+        for d in range(60)
+        for m in ["a", "b"]
+    ]
+    repeated = [
+        dict(row, seed=seed) for row in records for seed in [11, 23, 37, 53, 71]
+    ]
+    a = paired_report(records, reference="a", draws=100)
+    b = paired_report(repeated, reference="a", draws=100)
+    assert a["b"]["interval"] == b["b"]["interval"]

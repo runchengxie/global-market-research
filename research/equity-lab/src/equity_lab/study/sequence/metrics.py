@@ -45,10 +45,12 @@ def paired_report(results, reference, block_length=20, draws=2000, seed=20261106
         if model == reference:
             continue
         paired = wide[[reference, model]].dropna()
-        segments = [
-            g[model].to_numpy() - g[reference].to_numpy()
-            for _, g in paired.groupby(level=[k for k in keys if k != "date"])
-        ]
+        # Average seed differences on each observed date. Replicating a seed
+        # must not invent additional market dates or narrow temporal intervals.
+        differences = (
+            (paired[model] - paired[reference]).groupby(level=["fold", "date"]).mean()
+        )
+        segments = [g.to_numpy() for _, g in differences.groupby(level="fold")]
         if not segments or min(map(len, segments)) < block_length:
             report[model] = dict(
                 difference=None, interval=None, reason="insufficient_paired_dates"

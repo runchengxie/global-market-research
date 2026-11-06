@@ -14,8 +14,11 @@ PRIMARY = [
     "sparse",
 ]
 SECONDARY = [
+    "matched",
+    "equal",
     "top1",
     "shared_router",
+    "shared_encoder",
     "drop_expert",
     "transformer_dense",
     "transformer_sparse",

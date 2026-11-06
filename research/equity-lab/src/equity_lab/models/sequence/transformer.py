@@ -8,13 +8,15 @@ from .lstm import routing, balance_loss
 class TokenExperts(nn.Module):
     def __init__(self, width, top_k):
         super().__init__()
-        self.router = nn.Linear(width, 4)
+        count = 1 if top_k is None else 4
+        hidden = width * 8 if top_k is None else width * 2
+        self.router = nn.Linear(width, count)
         self.experts = nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.Linear(width, width * 2), nn.GELU(), nn.Linear(width * 2, width)
+                    nn.Linear(width, hidden), nn.GELU(), nn.Linear(hidden, width)
                 )
-                for _ in range(4)
+                for _ in range(count)
             ]
         )
         self.top_k = top_k

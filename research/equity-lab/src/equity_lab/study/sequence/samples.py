@@ -54,7 +54,53 @@ def feature_frame(bars):
     ).rename(columns={"return_": "return", "range_": "range"})[FEATURES]
 
 
-def build_samples(snapshot, lookback=20, symbols=None):
+LEVEL_FEATURES = [
+    "close",
+    "ma5",
+    "ma10",
+    "ema5",
+    "ema10",
+    "rsi",
+    "bb_upper",
+    "bb_lower",
+    "macd",
+    "signal",
+    "return",
+    "volatility",
+    "open",
+    "high",
+    "low",
+]
+
+
+def level_feature_frame(bars):
+    close = bars.close
+    relative = feature_frame(bars)
+    ma20 = close.rolling(20).mean()
+    sd = close.rolling(20).std()
+    macd = relative.macd * close
+    return pd.DataFrame(
+        dict(
+            close=close,
+            ma5=close.rolling(5).mean(),
+            ma10=close.rolling(10).mean(),
+            ema5=close.ewm(span=5, adjust=False).mean(),
+            ema10=close.ewm(span=10, adjust=False).mean(),
+            rsi=relative.rsi * 100,
+            bb_upper=ma20 + 2 * sd,
+            bb_lower=ma20 - 2 * sd,
+            macd=macd,
+            signal=macd.ewm(span=9, adjust=False).mean(),
+            return_=relative["return"],
+            volatility=relative.volatility,
+            open=bars.open,
+            high=bars.high,
+            low=bars.low,
+        )
+    ).rename(columns={"return_": "return"})[LEVEL_FEATURES]
+
+
+def build_samples(snapshot, lookback=20, symbols=None, feature_mode="relative"):
     if type(lookback) is not int or lookback < 1:
         raise ValueError("INVALID_LOOKBACK")
     symbols = symbols or snapshot.manifest["spec"]["products"]
@@ -62,10 +108,16 @@ def build_samples(snapshot, lookback=20, symbols=None):
     sessions = snapshot.schedule.index.tolist()
     for symbol in symbols:
         bars = snapshot.frames[symbol]
-        features = feature_frame(bars).to_numpy(dtype=float)
+        features = (
+            feature_frame(bars)
+            if feature_mode == "relative"
+            else level_feature_frame(bars)
+        ).to_numpy(dtype=float)
         for end in range(lookback - 1, len(bars) - 2):
             window = features[end - lookback + 1 : end + 1]
             if not np.isfinite(window).all():
+                if end >= lookback + 19:
+                    raise ValueError("INVALID_FEATURE_WINDOW")
                 continue
             start, day, entry, exit_day = (
                 sessions[i] for i in [end - lookback + 1, end, end + 1, end + 2]
@@ -103,5 +155,5 @@ def build_samples(snapshot, lookback=20, symbols=None):
     return SampleSet(
         np.asarray(arrays, dtype=np.float32)[order],
         audit.iloc[order].reset_index(drop=True),
-        FEATURES.copy(),
+        (FEATURES if feature_mode == "relative" else LEVEL_FEATURES).copy(),
     )
