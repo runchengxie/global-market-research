@@ -158,12 +158,13 @@ def aggregate_four(rows):
     return result
 
 
-def freeze_intraday_plan(output, *, now):
+def freeze_intraday_plan(output, *, now, source_revision=None):
     if now.tzinfo is None or now < datetime(2026, 10, 2, tzinfo=timezone.utc):
         raise ValueError("INVALID_FREEZE_CLOCK")
     output = new_output(output)
     value = dict(
         schema="crypto.hourly_plan.v1",
+        source_revision=source_revision,
         frozen_at=now.isoformat(),
         products=PRODUCTS,
         months=MONTHS,
@@ -297,6 +298,7 @@ def acquire_intraday(plan_file, output, transport):
         schema="crypto.hourly_manifest.v1",
         status=ledger["status"],
         source="binance_spot",
+        source_revision=plan.get("source_revision"),
         products=PRODUCTS,
         quote_currency="USDT",
         price_basis="raw",
