@@ -56,7 +56,7 @@ def _producer(python, args, *, timeout=30):
     return json.loads(result.stdout)
 
 
-def freeze_observation(study, dataset, python, output, *, now):
+def freeze_observation(study, dataset, python, output, *, now, previous_protocol=None):
     study = safe_path(Path(study))
     dataset = safe_path(Path(dataset))
     verify_seal(study)
@@ -86,7 +86,71 @@ def freeze_observation(study, dataset, python, output, *, now):
             sha256=digest(file),
             fit_source_revision=summary["source_revision"],
         )
-    output = new_output(output, inputs=[study, dataset])
+    budget = dict(
+        captures=48,
+        http_attempts=96,
+        transferred_bytes=32 * 1024**2,
+        per_capture_seconds=60,
+        per_response_bytes=1024**2,
+    )
+    predecessor = None
+    previous_inputs = []
+    if previous_protocol is not None:
+        previous = safe_path(Path(previous_protocol))
+        verify_seal(previous)
+        old = read_json(previous / "protocol.json")
+        old_root = safe_path(Path(old["capture_root"]))
+        if (
+            old_root != previous.with_name(previous.name + ".captures")
+            or old_root.with_name(old_root.name + ".lock").exists()
+        ):
+            raise ValueError("PREDECESSOR_ACTIVE_OR_INVALID")
+        if {k: v["sha256"] for k, v in old["models"].items()} != {
+            k: v["sha256"] for k, v in models.items()
+        }:
+            raise ValueError("PREDECESSOR_MODEL_CHANGED")
+        used = 0
+        used_bytes = 0
+        reserved = 0
+        seals = []
+        for index, folder in enumerate(sorted(old_root.iterdir()), 1):
+            if folder.name != f"{index:06d}":
+                raise ValueError("PREDECESSOR_UNKNOWN_STATE")
+            verify_seal(folder)
+            receipt = read_json(folder / "receipt.json")
+            if (
+                receipt["protocol_sha256"] != digest(previous / "protocol.json")
+                or receipt["committed_forecasts"]
+                or receipt["scored_forecasts"]
+                or instant(receipt["captured_at"]) > now
+            ):
+                raise ValueError("PREDECESSOR_NOT_EMPTY_FAILED_START")
+            used += receipt["http"]["attempts"]
+            used_bytes += receipt["http"]["bytes"]
+            reserved += old["budget"]["per_response_bytes"] * int(
+                receipt["http"]["unknown_spend"]
+            )
+            seals.append(digest(folder / "seal.json"))
+        budget = dict(old["budget"])
+        budget["captures"] -= len(seals)
+        budget["http_attempts"] -= used
+        budget["transferred_bytes"] -= used_bytes + reserved
+        if (
+            min(
+                budget["captures"], budget["http_attempts"], budget["transferred_bytes"]
+            )
+            <= 0
+        ):
+            raise ValueError("PREDECESSOR_BUDGET_EXHAUSTED")
+        predecessor = dict(
+            protocol_sha256=digest(previous / "protocol.json"),
+            capture_seals=seals,
+            http_attempts_charged=used,
+            transferred_bytes_charged=used_bytes,
+            reserved_unknown_bytes=reserved,
+        )
+        previous_inputs = [previous, old_root]
+    output = new_output(output, inputs=[study, dataset, *previous_inputs])
     captures = output.with_name(output.name + ".captures")
     captures.mkdir(exist_ok=False)
     value = dict(
@@ -100,13 +164,8 @@ def freeze_observation(study, dataset, python, output, *, now):
         dataset_seal_sha256=digest(dataset / "seal.json"),
         study_seal_sha256=digest(study / "seal.json"),
         factor_forecasting="blocked_stale_and_unknown_historical_availability",
-        budget=dict(
-            captures=48,
-            http_attempts=96,
-            transferred_bytes=32 * 1024**2,
-            per_capture_seconds=60,
-            per_response_bytes=1024**2,
-        ),
+        budget=budget,
+        predecessor=predecessor,
         accepted_research=False,
         execution_authorized=False,
     )
@@ -182,7 +241,7 @@ class RecentTransport:
             [
                 sys.executable,
                 "-m",
-                __name__,
+                "competition_tools.evaluation.crypto_observation",
                 "worker",
                 url,
                 str(max_bytes),
@@ -536,6 +595,7 @@ def main():
     freeze = sub.add_parser("freeze")
     for key in ["study", "dataset", "producer-python", "output"]:
         freeze.add_argument("--" + key, type=Path, required=True)
+    freeze.add_argument("--previous-protocol", type=Path)
     capture = sub.add_parser("capture")
     capture.add_argument("--protocol", type=Path, required=True)
     args = parser.parse_args()

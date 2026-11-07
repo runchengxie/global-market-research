@@ -383,3 +383,39 @@ def test_recent_capture_rejects_future_only_or_stale_history(observer):
         module.normalize_recent(body, "BTCUSDT", clock["now"] - timedelta(days=100))
     with pytest.raises(ValueError):
         module.normalize_recent(body, "BTCUSDT", clock["now"] + timedelta(days=1))
+
+
+def test_recent_worker_keeps_canonical_module_when_started_as_cli(monkeypatch):
+    import competition_tools.evaluation.crypto_observation as module
+
+    def run(command, **kwargs):
+        assert command[2] == "competition_tools.evaluation.crypto_observation"
+        return 200, b"[]"
+
+    monkeypatch.setattr(module, "run_worker", run)
+    monkeypatch.setattr(module, "__name__", "__main__")
+    assert module.RecentTransport().fetch(
+        module.recent_url("BTCUSDT"), max_bytes=1024, timeout=1
+    ) == (200, b"[]")
+
+
+def test_recovery_protocol_carries_reserved_unknown_spend(observer):
+    module, protocol, clock, transport = observer
+
+    class Lost:
+        def fetch(self, *args, **kwargs):
+            raise TimeoutError("unknown")
+
+    module.capture_observation(protocol, Lost(), clock=lambda: clock["now"])
+    recovered = module.freeze_observation(
+        protocol.parent / "study",
+        protocol.parent / "data",
+        __import__("pathlib").Path("/usr/bin/python3"),
+        protocol.parent / "recovered",
+        now=clock["now"] + timedelta(minutes=1),
+        previous_protocol=protocol,
+    )
+    assert recovered["budget"]["http_attempts"] == 95
+    assert recovered["budget"]["captures"] == 47
+    assert recovered["budget"]["transferred_bytes"] == 31 * 1024**2
+    assert recovered["predecessor"]["reserved_unknown_bytes"] == 1024**2
