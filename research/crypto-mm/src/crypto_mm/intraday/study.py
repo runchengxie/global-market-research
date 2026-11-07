@@ -120,6 +120,8 @@ def freeze_screen(dataset, sentiment, expected_sha, output, source_revision):
     if sha(sentiment) != expected_sha:
         raise ValueError("FACTOR_SOURCE_CHANGED")
     output = external(output)
+    if any((p / "seal.json").exists() for p in output.parents):
+        raise ValueError("OUTPUT_INSIDE_SEALED_EVIDENCE")
     if (
         output.is_relative_to(dataset)
         or dataset.is_relative_to(output)
@@ -193,6 +195,8 @@ def run_screen(plan_file, output):
     dataset = external(plan["dataset"])
     sentiment = external(plan["sentiment"])
     output = external(output)
+    if any((p / "seal.json").exists() for p in output.parents):
+        raise ValueError("OUTPUT_INSIDE_SEALED_EVIDENCE")
     if any(
         output.is_relative_to(p) or p.is_relative_to(output)
         for p in [dataset, plan_file.parent, sentiment]

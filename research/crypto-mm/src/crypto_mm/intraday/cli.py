@@ -3,7 +3,7 @@
 import argparse
 import json
 from pathlib import Path
-from .inputs import sha
+from .inputs import sha, read, external
 from .study import freeze_screen, run_screen
 
 
@@ -32,6 +32,11 @@ def main():
     run.add_argument("--plan", type=Path, required=True)
     run.add_argument("--output", type=Path, required=True)
     sub.add_parser("fingerprint")
+    forecast = sub.add_parser("forecast")
+    for name in ["capture", "protocol", "output"]:
+        forecast.add_argument("--" + name, type=Path, required=True)
+    forecast.add_argument("--capture-sha256", required=True)
+    forecast.add_argument("--generated-at", required=True)
     args = parser.parse_args()
     if args.command == "freeze":
         value = freeze_screen(
@@ -53,6 +58,26 @@ def main():
                 "verified_factor_arm",
             ]
         }
+    elif args.command == "forecast":
+        from .forecast import forecast_capture
+
+        capture = external(args.capture)
+        protocol = external(args.protocol)
+        output = external(args.output)
+        if (
+            any(
+                (parent / "seal.json").exists()
+                for parent in [output.parent, *output.parents]
+            )
+            or sha(capture) != args.capture_sha256
+            or output in [capture, protocol]
+        ):
+            raise ValueError("CAPTURE_CHANGED_OR_OUTPUT_OVERLAP")
+        value = forecast_capture(read(capture), read(protocol), args.generated_at)
+        if sha(capture) != args.capture_sha256:
+            raise ValueError("CAPTURE_CHANGED")
+        with output.open("x") as f:
+            json.dump(value, f, allow_nan=False)
     else:
         value = fingerprint()
     print(json.dumps(value, indent=2))

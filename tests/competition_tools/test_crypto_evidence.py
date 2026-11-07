@@ -140,3 +140,246 @@ def test_unexpected_zip_member_is_rejected(member):
     checksum = hashlib.sha256(data).hexdigest() + " BTCUSDT-1h-2025-01.zip"
     with pytest.raises(ValueError):
         normalize_hourly(data, checksum, "BTCUSDT", "2025-01")
+
+
+def test_forecast_commit_must_precede_entry_and_bind_features():
+    from competition_tools.evaluation.crypto_observation import validate_forecasts
+
+    now = datetime(2026, 11, 7, 12, 30, tzinfo=timezone.utc)
+    row = dict(
+        candidate="price_only-1h",
+        asset="BTCUSDT",
+        feature_cutoff="2026-11-07T12:00:00Z",
+        generated_at=now.isoformat(),
+        entry_at="2026-11-07T13:00:00Z",
+        exit_at="2026-11-07T14:00:00Z",
+        prediction=0.01,
+        prior_prediction=0.001,
+        feature_sha256="a" * 64,
+        checkpoint_sha256="b" * 64,
+    )
+    protocol = dict(
+        models={"price_only-1h": {"sha256": "b" * 64}}, frozen_at="2026-11-07T12:15:00Z"
+    )
+    assert validate_forecasts(protocol, [row], now) == [row]
+    row["entry_at"] = "2026-11-07T12:00:00Z"
+    with pytest.raises(ValueError):
+        validate_forecasts(protocol, [row], now)
+
+
+def test_monitor_preserves_unknown_inputs_without_promoting(tmp_path):
+    from competition_tools.evaluation.crypto_monitor import monitor
+
+    result = monitor(
+        tmp_path / "missing-data",
+        tmp_path / "missing-study",
+        tmp_path / "missing-observation",
+        as_of=datetime.now(timezone.utc),
+    )
+    assert result["status"] == "blocked" and len(result["blocking_reasons"]) == 3
+    assert (
+        result["accepted_research"] is False and result["execution_authorized"] is False
+    )
+
+
+def test_observation_receipt_ids_do_not_break_history_validation(tmp_path):
+    from competition_tools.evaluation.crypto_observation import (
+        observation_history,
+        canonical_hash,
+    )
+    from competition_tools.crypto_evidence import digest
+    import json
+
+    protocol_dir = tmp_path / "protocol"
+    protocol_dir.mkdir()
+    captures = tmp_path / "protocol.captures"
+    captures.mkdir()
+    protocol = dict(
+        models={"price_only-1h": {"sha256": "b" * 64}},
+        frozen_at="2026-11-07T12:15:00Z",
+        capture_root=str(captures),
+    )
+    (protocol_dir / "protocol.json").write_text(json.dumps(protocol))
+    seal(protocol_dir)
+    row = dict(
+        candidate="price_only-1h",
+        asset="BTCUSDT",
+        feature_cutoff="2026-11-07T12:00:00Z",
+        generated_at="2026-11-07T12:30:00Z",
+        entry_at="2026-11-07T13:00:00Z",
+        exit_at="2026-11-07T14:00:00Z",
+        prediction=0.01,
+        prior_prediction=0.001,
+        feature_sha256="a" * 64,
+        checkpoint_sha256="b" * 64,
+    )
+    row["id"] = canonical_hash(
+        [
+            digest(protocol_dir / "protocol.json"),
+            row["candidate"],
+            row["asset"],
+            row["entry_at"],
+        ]
+    )
+    out = captures / "000001"
+    out.mkdir()
+    (out / "receipt.json").write_text(
+        json.dumps(
+            dict(
+                protocol_sha256=digest(protocol_dir / "protocol.json"),
+                previous_seal_sha256=None,
+                committed_forecasts=[row],
+                captured_at="2026-11-07T12:30:01Z",
+                http={"unknown_spend": False},
+            )
+        )
+    )
+    seal(out)
+    assert len(observation_history(protocol_dir)[1]) == 1
+
+
+@pytest.fixture
+def observer(tmp_path, monkeypatch):
+    import json
+    import competition_tools.evaluation.crypto_observation as module
+    from competition_tools.crypto_evidence import digest, read_json
+
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "manifest.json").write_text(
+        json.dumps({"end_exclusive": "2026-10-01T00:00:00Z"})
+    )
+    seal(data)
+    study = tmp_path / "study"
+    study.mkdir()
+    (study / "models").mkdir()
+    (study / "summary.json").write_text(
+        json.dumps(dict(status="completed", fit_count=24, source_revision="a" * 40))
+    )
+    (study / "plan.json").write_text(
+        json.dumps({"dataset_seal_sha256": digest(data / "seal.json")})
+    )
+    for step in [1, 4]:
+        (study / "models" / f"{step}h-2-price_only.json").write_text(
+            json.dumps(
+                dict(
+                    arm="price_only",
+                    step_hours=step,
+                    fit_last_exit="2026-07-31T00:00:00Z",
+                )
+            )
+        )
+    seal(study)
+    clock = {"now": datetime(2026, 11, 7, 12, 30, tzinfo=timezone.utc)}
+
+    def producer(python, args, **kwargs):
+        if args == ["fingerprint"]:
+            return {"files": {"source.py": "a" * 64}}
+        opts = dict(zip(args[1::2], args[2::2]))
+        protocol = read_json(opts["--protocol"])
+        now = datetime.fromisoformat(opts["--generated-at"])
+        result = []
+        for candidate, binding in protocol["models"].items():
+            step = int(candidate.split("-")[-1][0])
+            cutoff = now.replace(
+                hour=now.hour // step * step, minute=0, second=0, microsecond=0
+            )
+            for asset in ["BTCUSDT", "ETHUSDT"]:
+                result.append(
+                    dict(
+                        candidate=candidate,
+                        asset=asset,
+                        feature_cutoff=cutoff.isoformat(),
+                        generated_at=now.isoformat(),
+                        entry_at=(cutoff + timedelta(hours=step)).isoformat(),
+                        exit_at=(cutoff + timedelta(hours=2 * step)).isoformat(),
+                        prediction=0.01,
+                        prior_prediction=0.001,
+                        feature_sha256="a" * 64,
+                        checkpoint_sha256=binding["sha256"],
+                    )
+                )
+        value = {"forecasts": result, "blocked": []}
+        Path(opts["--output"]).write_text(json.dumps(value))
+        return value
+
+    from pathlib import Path
+
+    monkeypatch.setattr(module, "_producer", producer)
+    protocol = tmp_path / "protocol"
+    module.freeze_observation(
+        study,
+        data,
+        Path("/usr/bin/python3"),
+        protocol,
+        now=clock["now"] - timedelta(minutes=15),
+    )
+
+    class Transport:
+        calls = 0
+
+        def fetch(self, url, **kwargs):
+            self.calls += 1
+            now = clock["now"].replace(minute=0, second=0, microsecond=0)
+            start = now - timedelta(hours=499)
+            rows = []
+            for i in range(500):
+                t = int((start + timedelta(hours=i)).timestamp()) * 1000
+                rows.append([t, 100, 110, 90, 101, 1, t + 3600000 - 1, 0, 1, 0, 0, 0])
+            return 200, json.dumps(rows).encode()
+
+    return module, protocol, clock, Transport()
+
+
+def test_capture_commits_future_predictions_and_scores_only_matured(observer):
+    module, protocol, clock, transport = observer
+    first = module.capture_observation(protocol, transport, clock=lambda: clock["now"])
+    assert first["status"] == "completed" and len(first["observed_bars"]) == 0
+    assert len(first["committed_forecasts"]) == 4 and first["scored_forecasts"] == []
+    clock["now"] += timedelta(hours=3)
+    second = module.capture_observation(protocol, transport, clock=lambda: clock["now"])
+    assert second["status"] == "completed" and len(second["observed_bars"]) == 6
+    assert (
+        len(second["committed_forecasts"]) == 2 and len(second["scored_forecasts"]) == 2
+    )
+    assert len(module.observation_history(protocol)[1]) == 2
+
+
+def test_unknown_request_spend_stays_blocked_and_unknown_lock_is_preserved(observer):
+    module, protocol, clock, transport = observer
+    lock = protocol.with_name(protocol.name + ".captures.lock")
+    lock.write_text("unknown")
+    with pytest.raises(FileExistsError):
+        module.capture_observation(protocol, transport, clock=lambda: clock["now"])
+    assert transport.calls == 0 and lock.read_text() == "unknown"
+    lock.unlink()
+
+    class Lost:
+        def fetch(self, *args, **kwargs):
+            raise TimeoutError("unknown transfer")
+
+    partial = module.capture_observation(protocol, Lost(), clock=lambda: clock["now"])
+    assert partial["status"] == "partial" and partial["http"]["unknown_spend"]
+    with pytest.raises(ValueError, match="UNKNOWN_OBSERVATION_SPEND"):
+        module.capture_observation(protocol, transport, clock=lambda: clock["now"])
+    assert transport.calls == 0
+
+
+def test_output_rejects_any_sealed_ancestor_even_without_explicit_input(tmp_path):
+    parent = tmp_path / "sealed"
+    parent.mkdir()
+    (parent / "facts").write_text("a")
+    seal(parent)
+    with pytest.raises(ValueError):
+        new_output(parent / "report")
+    assert not (parent / "report").exists()
+
+
+def test_recent_capture_rejects_future_only_or_stale_history(observer):
+    module, protocol, clock, transport = observer
+    _, body = transport.fetch(module.recent_url("BTCUSDT"))
+    assert len(module.normalize_recent(body, "BTCUSDT", clock["now"])) >= 170
+    with pytest.raises(ValueError):
+        module.normalize_recent(body, "BTCUSDT", clock["now"] - timedelta(days=100))
+    with pytest.raises(ValueError):
+        module.normalize_recent(body, "BTCUSDT", clock["now"] + timedelta(days=1))

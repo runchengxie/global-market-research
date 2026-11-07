@@ -135,3 +135,114 @@ def test_failed_plan_cannot_reset_fit_budget_in_another_directory(
     with pytest.raises(FileExistsError):
         study.run_screen(tmp_path / "plan/plan.json", tmp_path / "another")
     assert not (tmp_path / "another").exists()
+
+
+def test_frozen_forecast_is_committed_before_future_entry(tmp_path):
+    from crypto_mm.intraday.forecast import forecast_capture
+    from crypto_mm.intraday.inputs import write, sha
+
+    source = bars(400)
+    x = np.tile(np.arange(7, dtype=float), (30, 1))
+    y = np.linspace(0.001, 0.01, 30)
+    from crypto_mm.intraday.features import NAMES
+
+    model = fit_model(x, y, NAMES)
+    model.update(step_hours=1, arm="price_only", fit_last_exit="2024-12-01T00:00:00Z")
+    file = tmp_path / "model.json"
+    write(file, model)
+    protocol = dict(
+        frozen_at="2024-12-31T00:00:00Z",
+        models={"price_only-1h": dict(file=str(file), sha256=sha(file))},
+    )
+    eth = [dict(r, asset="ETHUSDT") for r in source]
+    generated = datetime.fromisoformat(source[-1]["interval_end"]) + timedelta(
+        minutes=5
+    )
+    result = forecast_capture(
+        {"prices": {"BTCUSDT": source, "ETHUSDT": eth}}, protocol, generated.isoformat()
+    )
+    assert len(result["forecasts"]) == 2
+    assert all(
+        datetime.fromisoformat(r["entry_at"]) > generated for r in result["forecasts"]
+    )
+    late = forecast_capture(
+        {"prices": {"BTCUSDT": source, "ETHUSDT": eth}},
+        protocol,
+        (generated + timedelta(hours=1)).isoformat(),
+    )
+    assert late["forecasts"] == [] and len(late["blocked"]) == 2
+
+
+def test_forecast_cli_cannot_write_into_sealed_protocol(tmp_path, monkeypatch):
+    import sys
+    from crypto_mm.intraday.cli import main
+    from crypto_mm.intraday.inputs import write, sha, seal
+
+    folder = tmp_path / "protocol"
+    folder.mkdir()
+    write(folder / "protocol.json", {"models": {}})
+    seal(folder)
+    capture = tmp_path / "capture.json"
+    write(capture, {"prices": {}})
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "cli",
+            "forecast",
+            "--capture",
+            str(capture),
+            "--capture-sha256",
+            sha(capture),
+            "--protocol",
+            str(folder / "protocol.json"),
+            "--output",
+            str(folder / "extra.json"),
+            "--generated-at",
+            "2026-11-07T12:00:00Z",
+        ],
+    )
+    with pytest.raises(ValueError):
+        main()
+    assert not (folder / "extra.json").exists()
+
+
+def test_frozen_forecaster_rejects_wrong_feature_order(tmp_path):
+    from crypto_mm.intraday.forecast import forecast_capture
+    from crypto_mm.intraday.features import NAMES
+    from crypto_mm.intraday.inputs import write, sha
+
+    model = dict(
+        schema="crypto.ridge_checkpoint.v1",
+        features=list(reversed(NAMES)),
+        x_mean=[0.0] * 7,
+        x_scale=[1.0] * 7,
+        y_mean=0.0,
+        y_scale=1.0,
+        coef=[0.0] * 7,
+        intercept=0.0,
+        step_hours=1,
+        arm="price_only",
+        fit_last_exit="2024-12-01T00:00:00Z",
+    )
+    file = tmp_path / "model.json"
+    write(file, model)
+    source = bars(400)
+    protocol = dict(
+        frozen_at="2024-12-31T00:00:00Z",
+        models={"price_only-1h": dict(file=str(file), sha256=sha(file))},
+    )
+    generated = (
+        datetime.fromisoformat(source[-1]["interval_end"]) + timedelta(minutes=5)
+    ).isoformat()
+    with pytest.raises(ValueError):
+        forecast_capture(
+            {
+                "prices": {
+                    "BTCUSDT": source,
+                    "ETHUSDT": [dict(r, asset="ETHUSDT") for r in source],
+                }
+            },
+            protocol,
+            generated,
+        )

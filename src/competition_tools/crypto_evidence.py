@@ -35,6 +35,8 @@ def read_json(path):
 
 def new_output(path, *, inputs=()):
     path = safe_path(Path(path))
+    if any((p / "seal.json").exists() for p in path.parents):
+        raise ValueError("OUTPUT_INSIDE_SEALED_EVIDENCE")
     for source in inputs:
         source = safe_path(Path(source))
         if path.is_relative_to(source) or source.is_relative_to(path):
