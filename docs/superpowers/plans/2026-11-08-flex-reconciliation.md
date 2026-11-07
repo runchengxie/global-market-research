@@ -14,11 +14,15 @@ No orders, targets, broker login, token/query/scheduler/production activation. N
 Mixed-date FX or positions; base summary double counting; short/negative cash handling; incomplete identity/marks; offsetting unsupported assets hiding a zero residual.
 
 ### Task 1: Pure reconciliation and CLI
-- [ ] Write failing synthetic FX/valuation/NAV/cash/LOT and stale/missing/conflicting-source tests.
-- [ ] Implement latest-date checks and component statuses, documented fixed tolerances and conservative weights; emit snapshot.json through existing collector.
-- [ ] Verify CLI regression/seal behavior and EN/zh-CN documentation.
+- [x] Write failing synthetic FX/valuation/NAV/cash/LOT and stale/missing/conflicting-source tests.
+- [x] Implement latest-date checks and component statuses, documented fixed tolerances and conservative weights; emit snapshot.json through existing collector.
+- [x] Verify CLI regression/seal behavior and EN/zh-CN documentation.
 
 ### Task 2: Actual verification and integration
 - [ ] Offline re-inspect the retained new query result and update the private marked-holdings/cash report and source receipts.
 - [ ] Run affected/full tests, Ruff/import boundaries, whole-branch review and necessary regressions.
 - [ ] PR/exact-head CI/standing authorized integration/main deployment verification/private retention/task-only cleanup.
+
+## Review ruling
+
+Independent review found that filtered incomplete latest rows could permit an older fallback and unsupported position rows could disappear. The reconciliation now derives position dates before filtering, blocks incomplete current Summary rows and preserves unsupported rows/source diagnostics. Receipt/CLI expose reconciliation status separately from acquisition status. Regression coverage also blocks ambiguous conids and Decimal overflow. No change to query settings or execution promotion.

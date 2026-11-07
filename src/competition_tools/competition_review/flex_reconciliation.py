@@ -202,6 +202,58 @@ def _cash(root, day, nav, rates, expected):
     return result
 
 
+def _position_scope(root):
+    dates, incomplete, unsupported, issues = [], set(), [], []
+    counts = {}
+    for statement in root.findall("./FlexStatements/FlexStatement"):
+        first, last = (
+            report_date(statement.get("fromDate")),
+            report_date(statement.get("toDate")),
+        )
+        for row in statement.findall("./OpenPositions/OpenPosition"):
+            if row.get("accountId") == "-":
+                counts["aggregate_placeholder"] = (
+                    counts.get("aggregate_placeholder", 0) + 1
+                )
+                continue
+            level = row.get("levelOfDetail", "").upper()
+            counts[level or "unknown"] = counts.get(level or "unknown", 0) + 1
+            try:
+                stamp = report_date(row.get("reportDate"))
+                dates.append(stamp)
+                if not first <= stamp <= last:
+                    issues.append("SOURCE_POSITION_DATE_OUTSIDE_REPORT")
+            except FlexError:
+                stamp = None
+                issues.append("SOURCE_POSITION_DATE_MISSING_OR_INVALID")
+            if row.get("assetCategory") != "STK":
+                unsupported.append(
+                    dict(
+                        report_date=stamp,
+                        asset_class=row.get("assetCategory"),
+                        conid=row.get("conid"),
+                        symbol=row.get("symbol"),
+                        level_of_detail=level,
+                    )
+                )
+            elif level == "SUMMARY" and any(
+                not row.get(k)
+                for k in [
+                    "reportDate",
+                    "symbol",
+                    "currency",
+                    "position",
+                    "conid",
+                    "markPrice",
+                    "positionValue",
+                    "multiplier",
+                    "fxRateToBase",
+                ]
+            ):
+                incomplete.add(stamp)
+    return dates, incomplete, unsupported, counts, issues
+
+
 def reconcile_snapshot(raw, *, expected_account, base_currency, account_ref):
     observation = inspect_report(
         raw,
@@ -212,7 +264,17 @@ def reconcile_snapshot(raw, *, expected_account, base_currency, account_ref):
     root = parse_xml(raw)
     base = observation["base_currency"]
     nav_rows = {}
-    global_issues = []
+    (
+        position_dates,
+        incomplete_dates,
+        unsupported_positions,
+        detail_counts,
+        global_issues,
+    ) = _position_scope(root)
+    if unsupported_positions:
+        global_issues.append("UNSUPPORTED_POSITION_SCOPE")
+    if not base or not re.fullmatch(r"[A-Z]{3}", base):
+        global_issues.append("BASE_CURRENCY_UNSUPPORTED")
     for statement in root.findall("./FlexStatements/FlexStatement"):
         first, last = (
             report_date(statement.get("fromDate")),
@@ -235,7 +297,7 @@ def reconcile_snapshot(raw, *, expected_account, base_currency, account_ref):
             if day in nav_rows and nav_rows[day] != attrs:
                 global_issues.append("CONFLICTING_NAV_ROW")
             nav_rows[day] = attrs
-    dates = [*nav_rows, *[p["report_date"] for p in observation["stock_positions"]]]
+    dates = [*nav_rows, *position_dates]
     day = max(dates) if dates else None
     result = dict(
         schema="competition.flex_snapshot.v1",
@@ -248,6 +310,9 @@ def reconcile_snapshot(raw, *, expected_account, base_currency, account_ref):
         cash=dict(status="blocked", balances=[], value_base=None, issues=[]),
         nav_bridge=dict(status="unavailable", residual=None),
         unsupported_nav_assets=[],
+        unsupported_position_rows=unsupported_positions,
+        position_detail_counts=detail_counts,
+        source_observation_issues=observation["issues"],
         issues=global_issues,
         tolerances=dict(
             local_value=str(LOCAL_TOLERANCE),
@@ -258,13 +323,22 @@ def reconcile_snapshot(raw, *, expected_account, base_currency, account_ref):
         platform_account_binding="unverified",
         execution_authorized=False,
     )
-    if global_issues or day not in nav_rows or not base:
+    blocking_issues = [x for x in global_issues if x != "UNSUPPORTED_POSITION_SCOPE"]
+    if blocking_issues or day not in nav_rows or not base:
         result["issues"].append("MATCHING_LATEST_NAV_REQUIRED")
         return result
     nav = nav_rows[day]
     try:
         rates = _rates(root, day, base)
         result["stock"] = _stocks(observation["stock_positions"], day, nav, rates, base)
+        if None in incomplete_dates or day in incomplete_dates:
+            result["stock"] = dict(
+                status="blocked",
+                positions=[],
+                value_base=None,
+                gross_value_base=None,
+                issues=["INCOMPLETE_SOURCE_STOCK_SUMMARY"],
+            )
         result["cash"] = _cash(root, day, nav, rates, expected_account)
         total = Decimal(_number(nav.get("total"), positive=True))
         components = {
@@ -287,6 +361,7 @@ def reconcile_snapshot(raw, *, expected_account, base_currency, account_ref):
             result["stock"]["status"] == result["cash"]["status"] == "reconciled"
             and abs(residual) <= BASE_TOLERANCE
             and not result["unsupported_nav_assets"]
+            and not unsupported_positions
         ):
             result["status"] = "reconciled_stock_cash"
     except (FlexError, DecimalException) as exc:

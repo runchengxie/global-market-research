@@ -103,6 +103,7 @@ def test_offline_cli_adds_sealed_reconciliation_artifact(tmp_path):
     out = tmp_path / "inspection"
     result = collect(config, out, report_file=report)
     assert result["status"] == "collected"
+    assert result["reconciliation_status"] == "reconciled_stock_cash"
     assert (
         json.loads((out / "snapshot.json").read_text())["status"]
         == "reconciled_stock_cash"
@@ -136,3 +137,25 @@ def test_out_of_range_decimal_input_blocks_instead_of_crashing():
     r = snapshot(RAW.replace(b'markPrice="50"', b'markPrice="1e1000000"'))
     assert r["stock"]["status"] == "blocked"
     assert all(p["observed_weight"] is None for p in r["stock"]["positions"])
+
+
+def test_latest_incomplete_summary_cannot_fall_back_to_older_snapshot():
+    extra = b'<OpenPosition accountId="DU0000000" currency="EUR" assetCategory="STK" conid="2" reportDate="20261107" position="1" markPrice="1" positionValue="1" multiplier="1" fxRateToBase="2" levelOfDetail="SUMMARY"/>'
+    raw = RAW.replace(b'toDate="20261106"', b'toDate="20261107"').replace(
+        b"</OpenPositions>", extra + b"</OpenPositions>"
+    )
+    r = snapshot(raw)
+    assert r["status"] == "needs_review"
+    assert r["report_date"] == "2026-11-07"
+    assert all(p["observed_weight"] is None for p in r["stock"]["positions"])
+
+
+def test_incomplete_current_summary_and_unsupported_positions_remain_visible():
+    incomplete = b'<OpenPosition accountId="DU0000000" currency="EUR" assetCategory="STK" conid="2" reportDate="20261106" position="1" levelOfDetail="SUMMARY"/>'
+    r = snapshot(RAW.replace(b"</OpenPositions>", incomplete + b"</OpenPositions>"))
+    assert r["stock"]["status"] == "blocked"
+    option = incomplete.replace(b'assetCategory="STK"', b'assetCategory="OPT"')
+    r = snapshot(RAW.replace(b"</OpenPositions>", option + b"</OpenPositions>"))
+    assert r["status"] == "needs_review"
+    assert r["unsupported_position_rows"][0]["asset_class"] == "OPT"
+    assert "UNSUPPORTED_POSITION_SCOPE" in r["issues"]

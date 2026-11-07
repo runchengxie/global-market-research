@@ -108,6 +108,7 @@ def collect(
                 status="collected",
                 report_sha256=hashlib.sha256(raw).hexdigest(),
                 report_bytes=len(raw),
+                reconciliation_status=snapshot["status"],
                 official_daily_facts_complete=False,
             )
     except FlexError as exc:
@@ -163,6 +164,11 @@ def main():
                 | (
                     {"issue_code": receipt["issue_code"]}
                     if "issue_code" in receipt
+                    else {}
+                )
+                | (
+                    {"reconciliation_status": receipt["reconciliation_status"]}
+                    if "reconciliation_status" in receipt
                     else {}
                 )
             )
