@@ -17,21 +17,21 @@ Existing forward protocol/producer unchanged; outputs external and sealed.39expe
 - Partial training cannot be exported as completed or retried under a reset plan.
 - Fee-selected threshold must depend only on the validation interval, with test timing purged.
 
-### Task1: Audit and diagnose
+### Task 1: Audit and diagnose
 Files: root `evaluation/crypto_audit.py`, root tests; leaf `exploration/diagnostics.py`, leaf tests; provider EN/zh-CN evidence docs.
 Interfaces: `audit_protocol(protocol:Path,as_of:datetime)->dict` freezes verified receipt prefix and reconstructs scores; `diagnose_scores(study:Path)->dict` returns fixed distribution aggregates. Retain hashes, no new fit.
 - [ ] Test invalid time/score/duplicate commitments and fixed-hurdle quantiles; observe failures.
 - [ ] Implement audit and score diagnostics with immutable CLI outputs.
 - [ ] Verify focused tests, acquire bounded public documentation and write aligned provenance note; commit.
 
-### Task2: Bounded comparable models
+### Task 2: Bounded comparable models
 Files: leaf `exploration/models.py`, `study.py`, `cli.py`, tests; optional neural deps/lock and optionalCI.
 Interfaces: `freeze_comparison(dataset,study,output,source_revision)` seals config and input hashes; `run_comparison(plan,output)` exclusively claims plan and writes checkpoints/scores/aggregate summaries. No root imports leaf.
 - [ ] Test chronological windows, purging, matched parameter count, router learning and validation-only decisions; observe failures.
 - [ ] Implement fixed models/config, budget checks and persisted predictions; verify focused tests and commit.
 - [ ] Freeze clean source plan, execute once externally with outer timeout, retain completed/partial receipts; never refit original screen.
 
-### Task3: Publish journal and integrate
+### Task 3: Publish journal and integrate
 Files: root `scripts/crypto_followup_projection.py`, tests; `site/src/data/crypto-followup.v1.json`, bilingualcatalogs/component, crypto topic integration and browser tests; aligned research guide.
 Interfaces: closed `crypto.followup_public.v1` aggregate projection with source seals, no individual forecasts or local paths.
 - [ ] Test projection scope/private fields and bilingual/noJS rendering; observe failures.
