@@ -338,7 +338,7 @@ def test_capture_commits_future_predictions_and_scores_only_matured(observer):
     assert len(first["committed_forecasts"]) == 4 and first["scored_forecasts"] == []
     clock["now"] += timedelta(hours=3)
     second = module.capture_observation(protocol, transport, clock=lambda: clock["now"])
-    assert second["status"] == "completed" and len(second["observed_bars"]) == 6
+    assert second["status"] == "completed" and len(second["observed_bars"]) == 2
     assert (
         len(second["committed_forecasts"]) == 2 and len(second["scored_forecasts"]) == 2
     )
@@ -419,3 +419,155 @@ def test_recovery_protocol_carries_reserved_unknown_spend(observer):
     assert recovered["budget"]["captures"] == 47
     assert recovered["budget"]["transferred_bytes"] == 31 * 1024**2
     assert recovered["predecessor"]["reserved_unknown_bytes"] == 1024**2
+
+
+def test_late_backfill_is_not_a_timely_prospective_observation(observer):
+    module, protocol, clock, transport = observer
+    module.capture_observation(protocol, transport, clock=lambda: clock["now"])
+    clock["now"] += timedelta(hours=3)
+    result = module.capture_observation(protocol, transport, clock=lambda: clock["now"])
+    assert len(result["observed_bars"]) == 2
+    assert len(result["late_received_bars"]) == 4
+
+
+def test_bounded_watch_waits_then_stops_for_partial_or_budget():
+    from competition_tools.evaluation.crypto_watch import next_action
+
+    frozen = datetime(2026, 11, 7, 12, tzinfo=timezone.utc)
+    protocol = dict(
+        frozen_at=frozen.isoformat(),
+        budget=dict(captures=2, http_attempts=4, transferred_bytes=10000),
+    )
+    receipt = dict(
+        captured_at=frozen.isoformat(),
+        status="completed",
+        http=dict(attempts=2, bytes=100),
+    )
+    assert (
+        next_action(protocol, [receipt], frozen + timedelta(minutes=10))["action"]
+        == "wait"
+    )
+    assert (
+        next_action(protocol, [receipt], frozen + timedelta(hours=1))["action"]
+        == "capture"
+    )
+    assert (
+        next_action(protocol, [receipt, receipt], frozen + timedelta(hours=2))["action"]
+        == "stop"
+    )
+    receipt["status"] = "partial"
+    assert (
+        next_action(protocol, [receipt], frozen + timedelta(hours=1))["action"]
+        == "stop"
+    )
+
+
+def test_worker_terminates_child_on_interrupt(monkeypatch):
+    import competition_tools.crypto_evidence as evidence
+
+    class Process:
+        calls = 0
+        killed = False
+        returncode = 0
+
+        def communicate(self, **kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                raise KeyboardInterrupt()
+            return b"", b""
+
+        def kill(self):
+            self.killed = True
+
+    process = Process()
+    monkeypatch.setattr(evidence.subprocess, "Popen", lambda *a, **k: process)
+    with pytest.raises(KeyboardInterrupt):
+        evidence.bounded_worker(["unused"], timeout=1, max_bytes=100)
+    assert process.killed and process.calls == 2
+
+
+def test_capture_cli_returns_nonzero_for_partial(monkeypatch, tmp_path):
+    import sys
+    import competition_tools.evaluation.crypto_observation as module
+
+    monkeypatch.setattr(
+        module,
+        "capture_observation",
+        lambda *a, **k: dict(
+            status="partial",
+            observed_bars=[],
+            committed_forecasts=[],
+            scored_forecasts=[],
+            reason="failed",
+        ),
+    )
+    monkeypatch.setattr(
+        sys, "argv", ["observe", "capture", "--protocol", str(tmp_path / "protocol")]
+    )
+    with pytest.raises(SystemExit) as error:
+        module.main()
+    assert error.value.code == 2
+
+
+def test_freeze_cli_forwards_predecessor_parameter(monkeypatch, tmp_path):
+    import sys
+    import competition_tools.evaluation.crypto_observation as module
+
+    received = {}
+
+    def freeze(*args, **kwargs):
+        received.update(kwargs)
+        return {"schema": "test", "frozen_at": "2026-11-07T12:00:00Z"}
+
+    monkeypatch.setattr(module, "freeze_observation", freeze)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "observe",
+            "freeze",
+            "--study",
+            str(tmp_path / "study"),
+            "--dataset",
+            str(tmp_path / "data"),
+            "--producer-python",
+            "/usr/bin/python3",
+            "--output",
+            str(tmp_path / "new"),
+            "--previous-protocol",
+            str(tmp_path / "previous"),
+        ],
+    )
+    module.main()
+    assert received["previous_protocol"] == tmp_path / "previous"
+
+
+def test_failed_start_budget_debit_preserves_existing_forecasts(observer):
+    module, old, clock, transport = observer
+    from competition_tools.crypto_evidence import digest
+
+    class Lost:
+        def fetch(self, *a, **k):
+            raise TimeoutError("unknown")
+
+    module.capture_observation(old, Lost(), clock=lambda: clock["now"])
+    clock["now"] += timedelta(minutes=2)
+    fresh = old.parent / "fresh"
+    module.freeze_observation(
+        old.parent / "study",
+        old.parent / "data",
+        __import__("pathlib").Path("/usr/bin/python3"),
+        fresh,
+        now=clock["now"],
+    )
+    module.capture_observation(fresh, transport, clock=lambda: clock["now"])
+    before = digest(fresh / "protocol.json")
+    receipt = fresh.with_name("fresh.captures") / "000001/seal.json"
+    receipt_hash = digest(receipt)
+    module.reconcile_failed_start(fresh, old, now=clock["now"])
+    effective, history = module.observation_history(fresh)
+    assert (
+        effective["budget"]["http_attempts"] == 95
+        and len(history[0][1]["committed_forecasts"]) == 4
+    )
+    assert digest(fresh / "protocol.json") == before and digest(receipt) == receipt_hash

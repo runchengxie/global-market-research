@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import subprocess
 from pathlib import Path
 from datetime import datetime, timezone
 from competition_tools.datasets.daily_storage import safe_path
@@ -102,3 +103,22 @@ def claim_plan(plan_file, purpose):
         f.flush()
         os.fsync(f.fileno())
     return plan
+
+
+def bounded_worker(command, *, timeout, max_bytes):
+    if timeout <= 0 or max_bytes <= 0:
+        raise ValueError("INVALID_WORKER_BUDGET")
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+    )
+    try:
+        output, _ = process.communicate(timeout=timeout)
+    except BaseException as exc:
+        process.kill()
+        process.communicate()
+        if isinstance(exc, subprocess.TimeoutExpired):
+            raise TimeoutError("CRYPTO_TRANSFER_DEADLINE") from exc
+        raise
+    if process.returncode or len(output) < 4 or len(output) > max_bytes + 4:
+        raise ValueError("UNKNOWN_CRYPTO_TRANSFER_SPEND")
+    return int.from_bytes(output[:4], "big"), output[4:]

@@ -19,10 +19,11 @@ from competition_tools.crypto_evidence import (
     new_output,
     seal,
     verify_seal,
+    bounded_worker as run_worker,
 )
 from competition_tools.datasets.daily_storage import safe_path
 from competition_tools.datasets.storage import write_json
-from competition_tools.datasets.binance_daily_transport import NoRedirect, run_worker
+from competition_tools.datasets.binance_daily_transport import NoRedirect
 from competition_tools.datasets.binance_intraday import PRODUCTS
 
 
@@ -54,6 +55,62 @@ def _producer(python, args, *, timeout=30):
     if result.returncode or len(result.stdout) > 128 * 1024:
         raise ValueError("OFFLINE_PRODUCER_FAILED")
     return json.loads(result.stdout)
+
+
+def _failed_start_debit(previous_protocol, models, *, now):
+    previous = safe_path(Path(previous_protocol))
+    verify_seal(previous)
+    old = read_json(previous / "protocol.json")
+    old_root = safe_path(Path(old["capture_root"]))
+    if (
+        old_root != previous.with_name(previous.name + ".captures")
+        or old_root.with_name(old_root.name + ".lock").exists()
+    ):
+        raise ValueError("PREDECESSOR_ACTIVE_OR_INVALID")
+    if {k: v["sha256"] for k, v in old["models"].items()} != {
+        k: v["sha256"] for k, v in models.items()
+    }:
+        raise ValueError("PREDECESSOR_MODEL_CHANGED")
+    used = 0
+    used_bytes = 0
+    reserved = 0
+    seals = []
+    for index, folder in enumerate(sorted(old_root.iterdir()), 1):
+        if folder.name != f"{index:06d}":
+            raise ValueError("PREDECESSOR_UNKNOWN_STATE")
+        verify_seal(folder)
+        receipt = read_json(folder / "receipt.json")
+        if (
+            receipt["protocol_sha256"] != digest(previous / "protocol.json")
+            or receipt["committed_forecasts"]
+            or receipt["scored_forecasts"]
+            or instant(receipt["captured_at"]) > now
+        ):
+            raise ValueError("PREDECESSOR_NOT_EMPTY_FAILED_START")
+        used += receipt["http"]["attempts"]
+        used_bytes += receipt["http"]["bytes"]
+        reserved += old["budget"]["per_response_bytes"] * int(
+            receipt["http"]["unknown_spend"]
+        )
+        seals.append(digest(folder / "seal.json"))
+    budget = dict(old["budget"])
+    budget["captures"] -= len(seals)
+    budget["http_attempts"] -= used
+    budget["transferred_bytes"] -= used_bytes + reserved
+    if (
+        min(budget["captures"], budget["http_attempts"], budget["transferred_bytes"])
+        <= 0
+    ):
+        raise ValueError("PREDECESSOR_BUDGET_EXHAUSTED")
+    predecessor = dict(
+        protocol_sha256=digest(previous / "protocol.json"),
+        capture_seals=seals,
+        http_attempts_charged=used,
+        transferred_bytes_charged=used_bytes,
+        reserved_unknown_bytes=reserved,
+    )
+    previous_inputs = [previous, old_root]
+    return budget, predecessor, previous_inputs
 
 
 def freeze_observation(study, dataset, python, output, *, now, previous_protocol=None):
@@ -96,60 +153,9 @@ def freeze_observation(study, dataset, python, output, *, now, previous_protocol
     predecessor = None
     previous_inputs = []
     if previous_protocol is not None:
-        previous = safe_path(Path(previous_protocol))
-        verify_seal(previous)
-        old = read_json(previous / "protocol.json")
-        old_root = safe_path(Path(old["capture_root"]))
-        if (
-            old_root != previous.with_name(previous.name + ".captures")
-            or old_root.with_name(old_root.name + ".lock").exists()
-        ):
-            raise ValueError("PREDECESSOR_ACTIVE_OR_INVALID")
-        if {k: v["sha256"] for k, v in old["models"].items()} != {
-            k: v["sha256"] for k, v in models.items()
-        }:
-            raise ValueError("PREDECESSOR_MODEL_CHANGED")
-        used = 0
-        used_bytes = 0
-        reserved = 0
-        seals = []
-        for index, folder in enumerate(sorted(old_root.iterdir()), 1):
-            if folder.name != f"{index:06d}":
-                raise ValueError("PREDECESSOR_UNKNOWN_STATE")
-            verify_seal(folder)
-            receipt = read_json(folder / "receipt.json")
-            if (
-                receipt["protocol_sha256"] != digest(previous / "protocol.json")
-                or receipt["committed_forecasts"]
-                or receipt["scored_forecasts"]
-                or instant(receipt["captured_at"]) > now
-            ):
-                raise ValueError("PREDECESSOR_NOT_EMPTY_FAILED_START")
-            used += receipt["http"]["attempts"]
-            used_bytes += receipt["http"]["bytes"]
-            reserved += old["budget"]["per_response_bytes"] * int(
-                receipt["http"]["unknown_spend"]
-            )
-            seals.append(digest(folder / "seal.json"))
-        budget = dict(old["budget"])
-        budget["captures"] -= len(seals)
-        budget["http_attempts"] -= used
-        budget["transferred_bytes"] -= used_bytes + reserved
-        if (
-            min(
-                budget["captures"], budget["http_attempts"], budget["transferred_bytes"]
-            )
-            <= 0
-        ):
-            raise ValueError("PREDECESSOR_BUDGET_EXHAUSTED")
-        predecessor = dict(
-            protocol_sha256=digest(previous / "protocol.json"),
-            capture_seals=seals,
-            http_attempts_charged=used,
-            transferred_bytes_charged=used_bytes,
-            reserved_unknown_bytes=reserved,
+        budget, predecessor, previous_inputs = _failed_start_debit(
+            previous_protocol, models, now=now
         )
-        previous_inputs = [previous, old_root]
     output = new_output(output, inputs=[study, dataset, *previous_inputs])
     captures = output.with_name(output.name + ".captures")
     captures.mkdir(exist_ok=False)
@@ -302,10 +308,68 @@ def normalize_recent(body, product, received):
     return out
 
 
+def reconcile_failed_start(protocol_dir, failed_protocol, *, now):
+    protocol_dir = safe_path(Path(protocol_dir))
+    failed_protocol = safe_path(Path(failed_protocol))
+    if protocol_dir == failed_protocol:
+        raise ValueError("DEBIT_SOURCE_IS_CURRENT_PROTOCOL")
+    current, history = observation_history(protocol_dir)
+    if current.get("predecessor"):
+        raise ValueError("BUDGET_ALREADY_DEBITED")
+    budget, parent, _ = _failed_start_debit(failed_protocol, current["models"], now=now)
+    budget = {key: min(value, current["budget"][key]) for key, value in budget.items()}
+    if (
+        len(history) > budget["captures"]
+        or sum(r["http"]["attempts"] for _, r in history) > budget["http_attempts"]
+        or sum(r["http"]["bytes"] for _, r in history) > budget["transferred_bytes"]
+    ):
+        raise ValueError("DEBIT_WOULD_HIDE_EXHAUSTED_BUDGET")
+    output = new_output(
+        protocol_dir.with_name(protocol_dir.name + ".budget-debit"),
+        inputs=[protocol_dir, failed_protocol],
+    )
+    value = dict(
+        schema="crypto.observation_budget_debit.v1",
+        protocol_sha256=digest(protocol_dir / "protocol.json"),
+        failed_protocol=str(failed_protocol),
+        reviewed_at=now.isoformat(),
+        effective_budget=budget,
+        predecessor=parent,
+    )
+    write_json(output / "debit.json", value)
+    seal(output)
+    return value
+
+
+def _effective_budget(protocol_dir, protocol):
+    folder = protocol_dir.with_name(protocol_dir.name + ".budget-debit")
+    if not folder.exists():
+        return protocol
+    verify_seal(folder)
+    value = read_json(folder / "debit.json")
+    if (
+        value["schema"] != "crypto.observation_budget_debit.v1"
+        or value["protocol_sha256"] != digest(protocol_dir / "protocol.json")
+        or protocol.get("predecessor")
+    ):
+        raise ValueError("BUDGET_DEBIT_SCOPE_MISMATCH")
+    expected, parent, _ = _failed_start_debit(
+        value["failed_protocol"], protocol["models"], now=instant(value["reviewed_at"])
+    )
+    expected = {
+        key: min(number, protocol["budget"][key]) for key, number in expected.items()
+    }
+    if expected != value["effective_budget"] or parent != value["predecessor"]:
+        raise ValueError("BUDGET_DEBIT_CHANGED")
+    return dict(protocol, budget=expected, predecessor=parent)
+
+
 def observation_history(protocol_dir):
     protocol_dir = safe_path(Path(protocol_dir))
     verify_seal(protocol_dir)
-    protocol = read_json(protocol_dir / "protocol.json")
+    protocol = _effective_budget(
+        protocol_dir, read_json(protocol_dir / "protocol.json")
+    )
     root = safe_path(Path(protocol["capture_root"]))
     if root != protocol_dir.with_name(protocol_dir.name + ".captures"):
         raise ValueError("INVALID_CAPTURE_ROOT")
@@ -388,6 +452,7 @@ def capture_observation(protocol_dir, transport, *, clock=utc):
         forecasts = []
         scores = []
         observed = []
+        late_received = []
         revisions = []
         blocked = []
         state = "running"
@@ -429,6 +494,12 @@ def capture_observation(protocol_dir, transport, *, clock=utc):
                 previous_observed.update(
                     {(x["asset"], x["interval_end"]): x for x in r["observed_bars"]}
                 )
+                previous_observed.update(
+                    {
+                        (x["asset"], x["interval_end"]): x
+                        for x in r.get("late_received_bars", [])
+                    }
+                )
                 previous_forecasts.update(
                     {x["id"]: x for x in r["committed_forecasts"]}
                 )
@@ -458,7 +529,13 @@ def capture_observation(protocol_dir, transport, *, clock=utc):
                         instant(row["interval_end"]) > instant(protocol["frozen_at"])
                         and key not in previous_observed
                     ):
-                        observed.append(
+                        destination = (
+                            observed
+                            if retrieved
+                            < instant(row["interval_end"]) + timedelta(hours=1)
+                            else late_received
+                        )
+                        destination.append(
                             dict(
                                 asset=asset,
                                 interval_end=key[1],
@@ -556,6 +633,8 @@ def capture_observation(protocol_dir, transport, *, clock=utc):
             captured_at=captured.isoformat(),
             http=http,
             observed_bars=observed,
+            late_received_bars=late_received,
+            collector_source_sha256=digest(Path(__file__)),
             committed_forecasts=forecasts,
             scored_forecasts=scores,
             revisions=revisions,
@@ -598,12 +677,27 @@ def main():
     freeze.add_argument("--previous-protocol", type=Path)
     capture = sub.add_parser("capture")
     capture.add_argument("--protocol", type=Path, required=True)
+    reconcile = sub.add_parser("reconcile")
+    reconcile.add_argument("--protocol", type=Path, required=True)
+    reconcile.add_argument("--previous-protocol", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "freeze":
         r = freeze_observation(
-            args.study, args.dataset, args.producer_python, args.output, now=utc()
+            args.study,
+            args.dataset,
+            args.producer_python,
+            args.output,
+            now=utc(),
+            previous_protocol=args.previous_protocol,
         )
         print(json.dumps({"schema": r["schema"], "frozen_at": r["frozen_at"]}))
+    elif args.command == "reconcile":
+        value = reconcile_failed_start(args.protocol, args.previous_protocol, now=utc())
+        print(
+            json.dumps(
+                dict(status="completed", effective_budget=value["effective_budget"])
+            )
+        )
     else:
         r = capture_observation(args.protocol, RecentTransport())
         print(
@@ -617,6 +711,8 @@ def main():
                 )
             )
         )
+        if r["status"] != "completed":
+            raise SystemExit(2)
 
 
 if __name__ == "__main__":

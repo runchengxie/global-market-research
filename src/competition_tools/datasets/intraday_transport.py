@@ -4,7 +4,8 @@ import sys
 import urllib.request
 import urllib.error
 from .binance_intraday import PRODUCTS, MONTHS, archive_url
-from .binance_daily_transport import NoRedirect, run_worker
+from .binance_daily_transport import NoRedirect
+from competition_tools.crypto_evidence import bounded_worker as run_worker
 
 
 def validate_url(url):

@@ -36,10 +36,10 @@
 - [ ] Run the complete screen on verified real inputs at clean source; reconstruct scores and seal output.
 
 ### Task3: Prospective receipts and local monitor
-**Files:** create evaluation/crypto_observation.py, crypto_monitor.py and focused root tests.
+**Files:** create evaluation/crypto_observation.py, crypto_monitor.py, crypto_watch.py and focused root tests.
 **Interfaces:** freeze_observation(output:Path,inputs:dict,now:datetime)->dict; capture_observation(protocol:Path,output:Path,transport,now:datetime)->dict; monitor(paths:list[Path],as_of:datetime)->dict. CLI clocks real UTC, APIs injectable for tests.
 - [ ] Test freeze/cutoff/first-seen/warmup, frozen coefficient forecasts committed before entry, separate observed/forecast/scored counts, no premature scoring, stale factor source, revisions, exclusive receipt/containment, corrupt/unknown monitor statuses RED.
-- [ ] Implement manual bounded public capture and read-only local report; GREEN/commit.
+- [ ] Implement manual bounded public capture, task-owned48h/cumulative-budget observation loop, and read-only local report; GREEN/commit.
 - [ ] Freeze real protocol and capture first receipt; report eligible future count truthfully, retain stable runtime instructions.
 
 ### Task4: Measured public evidence
