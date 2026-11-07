@@ -27,6 +27,7 @@
 
 [Paper 仓位分配](operations/paper-allocation.zh-CN.md)
 | 复核申报策略与参与证据 | [比赛策略私有复核](operations/competition-review.zh-CN.md) |
+| 采集券商只读报表 | [IBKR Flex 报表](operations/ibkr-flex.zh-CN.md) |
 
 - [BTC/ETH小时因子筛查、预先预测与运行状态](research/crypto-evidence.zh-CN.md)
 

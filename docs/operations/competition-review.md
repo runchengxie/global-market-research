@@ -50,3 +50,5 @@ For the existing daily reviewer, pass `--policy /external/policy.json --decision
 5. Re-run into a new private directory; compare coverage and blockers with the previous sealed report. Only after current marks and declaration-aligned model evidence exist should allocation changes be assessed.
 
 The implementation search must distinguish dataset acquisition checkpoints, price/CNN research and synthetic fixtures from a trained fundamental Ranker. Preserve the search scope and exclusions; an absent filename is not proof that no team member has the missing implementation.
+
+For saved Activity Flex Queries, use the [read-only collector](ibkr-flex.md). Its broker observations and stock-exposure proxy do not automatically populate official participation facts.

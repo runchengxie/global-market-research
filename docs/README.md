@@ -22,6 +22,7 @@ Start with the [offline quickstart](operations/team-quickstart.md) if you have n
 | Set up a Paper account workflow | [Gateway setup](operations/gateway-login.md), [release checks](operations/release-checks.md) |
 | Calculate or recover a bounded Paper allocation | [Paper allocation](operations/paper-allocation.md) |
 | Audit a declared strategy without trading | [Private competition review](operations/competition-review.md) |
+| Collect read-only broker reports | [IBKR Flex reporting](operations/ibkr-flex.md) |
 | Close a task and retain its evidence | [Artifact retention](operations/artifact-retention.md) |
 | Change code or build the website | [Development guide](development.md) |
 

@@ -50,3 +50,5 @@ python -m competition_tools.competition_review.cli \
 5. 写入新的私有目录，与上次封存报告比较覆盖和阻塞项。具备当前市值和申报模型证据后，再判断配置调整。
 
 实现盘点要区分数据下载断点、价格/CNN 研究、合成测试和训练好的基本面 Ranker。保留搜索范围与排除项；没有搜到某个文件名，不代表团队其他成员一定没有相应实现。
+
+已保存的 Activity Flex Query 可以使用[只读采集器](ibkr-flex.zh-CN.md)。券商观察值和股票敞口代理不会自动填成官方参与事实。
