@@ -19,13 +19,17 @@ No broker/network collection, orders, platform/scheduler/config changes or raw p
 
 ### Task 1: Participation evidence and arithmetic
 Files: `src/competition_tools/competition_review/{__init__,participation,evidence}.py`, `tests/competition_tools/test_competition_review.py`.
-Interfaces: `summarize_days(rows)` computes elapsed-only three-valued route statuses; `future_bounds(known_sum,unknown_past,remaining)` is conditional unlevered planning; `load_observations(root,as_of)` returns private observations+source hashes/errors; `calendar_scenario(name,as_of)` returns completed/full contest sessions; `daily_rows(sessions,facts)` preserves unknown fields.
-- [ ] Test complete/unknown/OR/intraday cases, duplicate/conflicting inputs and time/session boundaries; observe failures.
-- [ ] Implement pure arithmetic and strict offline evidence loading; verify focused tests, commit.
+Interfaces: `summarize_days(rows)` computes elapsed-only three-valued route statuses; `future_bounds(known_sum,known_days,unknown_past,remaining)` is conditional unlevered planning; `load_observations(root,as_of)` returns private observations+source hashes/errors; `calendar_scenario(name,as_of)` returns completed/full contest sessions; `daily_rows(sessions,facts)` preserves unknown fields.
+- [x] Test complete/unknown/OR/intraday cases, duplicate/conflicting inputs and time/session boundaries; observe failures.
+- [x] Implement pure arithmetic and strict offline evidence loading; verify focused tests, commit.
 
 ### Task 2: Declaration-aligned daily review
 Files: `competition_review/{decision,cli}.py`, additional tests; EN/zh-CN guides under `docs/operations/competition-review*`.
 Interfaces: `review_decision(policy,inputs,decision_time)` returns blocked/review_required/maintain_candidate, binding hashes and no order fields. CLI consumes explicit external declaration/snapshot root/optional normalized-facts input, writes a new sealed private report. Draft policy retains required nulls and prospective-only options.
-- [ ] Test stale/future/unbound/incomplete sources, causal source chain and valid maintain versus drift/risk review; observe failures.
-- [ ] Implement scoped report/CLI and private draft contract; document normalized inputs, official-rule uncertainty, local-vs-platform collection and recovery checklist.
-- [ ] Run actual read-only audit, relevant/full tests and independent finalreview; fix findings RED/GREEN; PR/CI/merge/main verification, private retention and task cleanup.
+- [x] Test stale/future/unbound/incomplete sources, causal source chain and valid maintain versus drift/risk review; observe failures.
+- [x] Implement scoped report/CLI and private draft contract; document normalized inputs, official-rule uncertainty, local-vs-platform collection and recovery checklist.
+- [x] Run actual read-only audit, relevant/full tests and independent finalreview; fix findings RED/GREEN; PR/CI/merge/main verification, private retention and task cleanup.
+
+## Implemented scope adjustment
+
+The CLI inventories snapshots and leaves all official daily facts unknown. A normalized statement importer is deferred until the organizer calendar, account binding and rate definitions are established; pure arithmetic remains directly testable. Actual audits are sealed private bundles, not execution promotion. Independent review identified policy type validation, effective-versus-available freshness and parent-hash lineage; regression cases now cover these. No broker verification was attempted.
