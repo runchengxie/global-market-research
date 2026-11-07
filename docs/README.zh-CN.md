@@ -24,3 +24,5 @@
 | 修改代码或构建网站 | [开发指南](development.zh-CN.md) |
 
 规则摘要和带日期的验证报告记录了当时查到的情况。比赛要求以主办方最新通知为准，操作命令以当前入门指南为准。
+
+[Paper 仓位分配](operations/paper-allocation.zh-CN.md)
