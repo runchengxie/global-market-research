@@ -9,9 +9,21 @@ from competition_tools.datasets.daily_storage import safe_path
 from .evidence import aware, load_observations, calendar_scenario
 from .participation import daily_rows, summarize_days, future_bounds
 from .decision import review_decision
+from .statements import load_statement_bundle
 
 
-def audit(declaration_root, snapshot_root, output, as_of):
+def audit(
+    declaration_root,
+    snapshot_root,
+    output,
+    as_of,
+    *,
+    statement_bundle=None,
+    policy_file=None,
+    decision_inputs=None,
+):
+    if (policy_file is None) != (decision_inputs is None):
+        raise ValueError("POLICY_AND_DECISION_INPUTS_REQUIRED_TOGETHER")
     declaration_root = safe_path(Path(declaration_root))
     snapshot_root = safe_path(Path(snapshot_root))
     receipt = read_json(declaration_root / "receipt.json")
@@ -57,44 +69,94 @@ def audit(declaration_root, snapshot_root, output, as_of):
             "official_daily_statements_and_calendar",
         ],
     )
+    declaration_hash = digest(declaration_root / "declaration.json")
+    statement = (
+        load_statement_bundle(
+            statement_bundle, as_of, declaration_sha256=declaration_hash
+        )
+        if statement_bundle
+        else None
+    )
+    inputs = {}
+    evidence_inputs = [declaration_root, snapshot_root]
+    provided_records = {}
+    if statement:
+        evidence_inputs.extend(
+            [
+                Path(statement["bundle_path"]),
+                *[Path(v["path"]) for v in statement["sources"].values()],
+            ]
+        )
+    if policy_file:
+        for key, value in [("policy", policy_file), ("inputs", decision_inputs)]:
+            value = safe_path(Path(value))
+            provided_records[key] = dict(path=str(value), sha256=digest(value))
+            evidence_inputs.append(value)
+        policy = read_json(policy_file)
+        inputs = read_json(decision_inputs)
+        if (
+            policy.get("declaration_sha256") != declaration_hash
+            or inputs.get("declaration_sha256") != declaration_hash
+        ):
+            raise ValueError("DAILY_REVIEW_DECLARATION_MISMATCH")
+        if statement and any(
+            v.get("account_ref") != statement["account_ref"] for v in [policy, inputs]
+        ):
+            raise ValueError("DAILY_REVIEW_ACCOUNT_MISMATCH")
+    decision = review_decision(policy, inputs, as_of)
     report = dict(
         schema="competition.private_audit.v1",
         as_of=as_of.isoformat(),
         declaration_receipt=receipt,
         declaration_independently_verified=False,
         observation_inventory=observations,
+        reviewed_statement=statement,
+        supplied_daily_evidence=provided_records,
         calendar_scenarios=scenarios,
         official_eligibility="unverified",
         execution_authorized=False,
     )
-    out = new_output(output, inputs=[declaration_root, snapshot_root])
+    out = new_output(output, inputs=evidence_inputs)
     for name, value in [
         ("audit.json", report),
-        ("policy-draft.json", policy),
-        ("daily-review.json", review_decision(policy, {}, as_of)),
+        ("policy-review.json" if policy_file else "policy-draft.json", policy),
+        ("daily-review.json", decision),
     ]:
         (out / name).write_text(
             json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
         )
+    summary = statement["summary"] if statement else None
+    coverage = (
+        "No reviewed daily statement supplied."
+        if summary is None
+        else json.dumps(summary, ensure_ascii=False)
+    )
+    (out / "report.md").write_text(
+        "# Private competition review\n\n[简体中文](report.zh-CN.md)\n\n"
+        + f"Official eligibility: unverified. Daily review: {decision['status']}. No execution authorization.\n\n"
+        + "Reviewed elapsed daily arithmetic (attributed inputs, not source authentication):\n\n"
+        + coverage
+        + "\n\n"
+        + "Local snapshots are observation proxies, not complete daily statements. Missing days remain unknown. "
+        + "Platform and local collection freshness are separate. XNYS/XTKS remain calendar scenarios. "
+        + "A supplied calendar is a reviewed completeness assertion, not an independently verified calendar.\n\n"
+        + "Recover official daily exports and ratio definitions/account binding; then establish PIT universe/factors, "
+        + "benchmark, Ranker checkpoint, dated scores, buffers, risk limits and marked current weights. "
+        + "Price-only research does not establish implementation of a declared fundamental Ranker. "
+        + "Do not rebalance solely to manufacture trade counts. Respect platform edit locks.\n",
+        encoding="utf-8",
+    )
     (out / "report.zh-CN.md").write_text(
-        """# 比赛策略私有审计
-
-已有用户提供的正式申报资料，校验记录见 audit.json；本工具未独立登录平台核验。
-
-当前结论：资格未知，调仓判断阻塞。没有生成交易指令。
-
-- 声明采用 PIT 基本面横截面 Ranker。现有价格动量基线不能替代该声明的实现证据。
-- 本地历史快照不是完整日账本，缺失日期不能按空仓或零换手计算。
-- 平台显示的最新采集与本地快照是不同证据来源；本地陈旧不证明平台中断。
-- XNYS、XTKS 仅为交易日情景，不是主办方确认的全球账户统计口径。
-- 规则允许持仓路径或换手路径满足条件，并没有普遍要求为了交易次数而调仓。
-
-下一步：获取主办方每日持仓率、换手率、空仓日定义和完整期间导出，核对账户绑定；补齐基准、PIT 因子、模型、评分、Top-K/进退缓冲、风险限额和当前市值权重。
-
-policy-draft.json 的空值是待补证据，不能当默认参数。daily-review.json 记录阻塞原因；持仓不变不能据此认定为经过策略复核。平台比赛期间锁定编辑，涉及申报变更应遵循主办方流程。
-
-公开规则：https://fundconnecthk.com/quant-league/legal/competition-rules/
-""",
+        "# 比赛策略私有复核\n\n[English](report.md)\n\n"
+        + f"官方资格：未核实。每日复核：{decision['status']}。没有交易授权。\n\n"
+        + "已过去日期的账本计算（来自所提供的记录，不代表独立来源认证）：\n\n"
+        + coverage
+        + "\n\n"
+        + "本地快照是观察值，不是完整日账本；缺失日期仍为未知。平台采集与本地采集分别检查。"
+        + "XNYS/XTKS 仅为日历情景。提供的日历完整性属于复核者声明，并非独立核验。\n\n"
+        + "下一步：获取官方每日导出、指标定义和账户绑定；补齐 PIT 投资池/因子、基准、Ranker、"
+        + "带日期评分、进退缓冲、风险限额及当前市值权重。价格研究不能证明申报基本面 Ranker 已执行。"
+        + "不要为了凑交易次数而调仓，申报变更遵循平台锁定和主办方流程。\n",
         encoding="utf-8",
     )
     seal(out)
@@ -107,9 +169,20 @@ def main():
     parser.add_argument("--snapshot-root", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--as-of")
+    parser.add_argument("--statement-bundle")
+    parser.add_argument("--policy")
+    parser.add_argument("--decision-inputs")
     args = parser.parse_args()
     as_of = aware(args.as_of) if args.as_of else datetime.now(timezone.utc)
-    audit(args.declaration_root, args.snapshot_root, args.output, as_of)
+    audit(
+        args.declaration_root,
+        args.snapshot_root,
+        args.output,
+        as_of,
+        statement_bundle=args.statement_bundle,
+        policy_file=args.policy,
+        decision_inputs=args.decision_inputs,
+    )
     print("Private audit saved; eligibility unverified; no execution authorization.")
 
 
