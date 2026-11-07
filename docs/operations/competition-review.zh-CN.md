@@ -37,7 +37,7 @@ python -m competition_tools.competition_review.cli \
 | `definitions` | `position_rate`、`turnover_rate`、`flat_day` 各提供 `{status, description, source_ids}` |
 | `days` | 不重复的已结束交易日标签，以及 `complete_day`、比例或 null、`had_any_position`、`had_any_trade`、`covered_through`、`available_at`、`source_ids` |
 
-完整比赛区间为 2026-10-25T16:00:00Z 至 2027-01-26T22:00:00Z。完整日声明必须覆盖对应收盘时点，且证据在复核时已可用。部分日保持未知；缺失交易日也保留在已过去日期的范围中，不会被删除。杠杆账户比例可以超过 1，但此时不计算无杠杆未来持仓情景。逐日覆盖的账户或币种字段必须与账本一致。创建新结果目录前，工具核对所有来源文件哈希。日历完整性、指标定义和复核者身份仍是来源方声明；工具不会独立认证 `organizer_confirmed`，也不会据此认定评奖资格。
+完整比赛区间为 2026-10-25T16:00:00Z 至 2027-01-26T22:00:00Z。日期标签须位于比赛民用日期范围（UTC−12 至 UTC+14），并与窗口起止各相差不超过一个日历日；这只是合理性检查，不指定官方标签时区。完整日声明必须覆盖对应收盘时点，且证据在复核时已可用。部分日保持未知；缺失交易日也保留在已过去日期的范围中，不会被删除。杠杆账户比例可以超过 1，但此时不计算无杠杆未来持仓情景。逐日覆盖的账户或币种字段必须与账本一致。创建新结果目录前，工具核对所有来源文件哈希。日历完整性、指标定义和复核者身份仍是来源方声明；工具不会独立认证 `organizer_confirmed`，也不会据此认定评奖资格。
 
 可将 `--policy /external/policy.json --decision-inputs /external/decision-inputs.json` 成对传给现有每日复核器。两份文件必须绑定已保存申报的哈希；若同时提供账本，账户代号也须一致。这只检查提供的权重和因果来源引用，不重建券商持仓或 Ranker 输出。结果包含 `policy-review.json`，没有这组参数时保留 `policy-draft.json`。双语报告和 audit.json 会反映实际输入的账本及复核状态。
 

@@ -224,3 +224,21 @@ def test_cli_policy_arguments_must_be_paired(tmp_path):
             policy_file=tmp_path / "policy.json",
         )
     assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize("label", ["2099-01-01", "2020-01-01", "2026-11-30"])
+def test_session_labels_must_be_plausible_for_windows(bundle, label):
+    raw = deepcopy(bundle[1])
+    raw["calendar"]["sessions"] = raw["calendar"]["sessions"][:1]
+    raw["calendar"]["sessions"][0]["session_date"] = label
+    raw["days"][0]["session_date"] = label
+    with pytest.raises(ValueError, match="SESSION_LABEL"):
+        load(bundle, raw)
+
+
+def test_hkt_next_day_label_is_allowed_for_us_close(bundle):
+    raw = deepcopy(bundle[1])
+    raw["calendar"]["sessions"] = raw["calendar"]["sessions"][:1]
+    raw["calendar"]["sessions"][0]["session_date"] = "2026-10-27"
+    raw["days"][0]["session_date"] = "2026-10-27"
+    assert load(bundle, raw)["summary"]["known_position_days"] == 1

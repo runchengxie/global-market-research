@@ -18,11 +18,15 @@ No network/broker collection, credentials, executable targets, platform or sched
 - Reproducible CLI reports must change when supplied daily evidence changes.
 
 ### Task 1: Statements and CLI
-- [ ] Add failing synthetic statement tests for complete/missing/intraday/OR cases and malformed provenance, dates and source paths.
-- [ ] Implement statements.py validation and add CLI optional bundle and paired policy/decision arguments; preserve old calls.
-- [ ] Test CLI ingestion end to end, dynamic summaries, hash checking and no overwrite; document exact normalized contract and export preparation.
+- [x] Add failing synthetic statement tests for complete/missing/intraday/OR cases and malformed provenance, dates and source paths.
+- [x] Implement statements.py validation and add CLI optional bundle and paired policy/decision arguments; preserve old calls.
+- [x] Test CLI ingestion end to end, dynamic summaries, hash checking and no overwrite; document exact normalized contract and export preparation.
 
 ### Task 2: Evidence exploration and delivery
-- [ ] Inventory existing exports and strategy evidence, retaining scope/exclusions/hash receipts outside Git; write private EN/zh-CN findings and recovery/research sequence.
+- [x] Inventory existing exports and strategy evidence, retaining scope/exclusions/hash receipts outside Git; write private EN/zh-CN findings and recovery/research sequence.
 - [ ] Run focused/full tests, lint/import checks and fresh-context whole-branch review; fix material findings with regression coverage.
 - [ ] PR, exact-head CI, authorized integration, main/deployment verification, private retention and task-only cleanup.
+
+## Execution ruling
+
+User clarified they did not manually export statements and prior Codex may have implemented collection. Read-only inspection confirmed existing snapshot/monitor/settlement scripts but no saved official statement within the recorded active-data scope. Existing scripts/jobs were not modified or started. Independent review identified remote date labels paired with historical windows; regression tests now reject implausible labels while allowing adjacent civil-day conventions. Calendar completeness and source authenticity remain attributed assertions.

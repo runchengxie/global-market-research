@@ -1,6 +1,6 @@
 """Validate attributed daily statement facts; never infer organizer definitions."""
 
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 import re
 from competition_tools.crypto_evidence import digest, read_json
@@ -96,6 +96,13 @@ def _load(path, as_of, declaration_sha256):
         if date.fromisoformat(label).isoformat() != label:
             raise ValueError("CANONICAL_SESSION_DATE_REQUIRED")
         opened, closed = aware(session["opens_at"]), aware(session["closes_at"])
+        label_date = date.fromisoformat(label)
+        if not (START - timedelta(hours=12)).date() <= label_date <= (
+            END + timedelta(hours=14)
+        ).date() or any(
+            abs((label_date - stamp.date()).days) > 1 for stamp in [opened, closed]
+        ):
+            raise ValueError("IMPLAUSIBLE_SESSION_LABEL")
         if not START <= opened < closed <= END or opened < last_close:
             raise ValueError("INVALID_OR_OVERLAPPING_SESSION")
         labels.append(label)
