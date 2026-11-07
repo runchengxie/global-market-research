@@ -137,5 +137,5 @@ jobs:
         run: |
           echo "DATA_ROOT=$RUNNER_TEMP/crypto-data" >> "$GITHUB_ENV"
           echo "UV_PROJECT_ENVIRONMENT=$RUNNER_TEMP/crypto-env" >> "$GITHUB_ENV"
-      - run: uv sync --locked --group dev --extra predictive
-      - run: uv run --locked --extra predictive pytest tests/test_intraday_evidence.py -q
+      - run: uv sync --locked --group dev --extra predictive --extra neural
+      - run: uv run --locked --extra predictive --extra neural pytest tests/test_intraday_evidence.py tests/test_exploration.py -q
