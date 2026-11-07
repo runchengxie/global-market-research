@@ -109,5 +109,6 @@
     "budget_debit": "预算扣减补充回执摘要",
     "receipt_chain_head": "公开观察链末端封存摘要"
   },
-  "late": "迟到补录的资产K线"
+  "late": "迟到补录的资产K线",
+  "followupSummary": "新增探索：{fits}次统一条件下的序列拟合、{scored}条已复核前瞻评分。较新快照与局限见研究记录。"
 }

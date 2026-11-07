@@ -27,3 +27,5 @@ Start with the [offline quickstart](operations/team-quickstart.md) if you have n
 The rules summary and dated validation reports record what was checked at the time. Follow the organizer's latest notices for competition requirements and the current setup guides for commands.
 
 - [BTC/ETH intraday factor screen, pre-outcome commitments and research health](research/crypto-evidence.md)
+
+- [Crypto follow-up: audited forward records and matched LSTM/MoE comparison](research/crypto-followup.md)

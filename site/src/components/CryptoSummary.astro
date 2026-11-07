@@ -1,5 +1,6 @@
 ---
 import facts from '../data/crypto-evidence.v1.json';
+import followup from '../data/crypto-followup.v1.json';
 import {validateCryptoEvidence,cryptoFinding} from '../lib/crypto-evidence.ts';
 import en from '../i18n/crypto-evidence-en.json';
 import zh from '../i18n/crypto-evidence-zh-CN.json';
@@ -15,6 +16,7 @@ const prefix=`/global-market-research/${locale==='en'?'':'zh-CN/'}`;
  <p>{number(data.experiment.fit_count)} {t.fits} · {number(data.experiment.trial_count)} {t.cases}</p>
  <p>{t.factorAvailability}</p>
  <p>{t.forecasts}: {number(data.observation.committed_forecasts)} · {t.scored}: {number(data.observation.scored_forecasts)}<br/>{t.asOf}: {time} UTC</p>
+ <p>{t.followupSummary.replace('{fits}',number(followup.comparison.fits_completed)).replace('{scored}',number(followup.forward.scored))}</p>
  <a href={`${prefix}research/crypto-evidence/`}>{t.openPage} →</a>
 </aside>
 <style>.crypto-summary{margin:3rem 0;padding:1.2rem 1.4rem;border-left:3px solid var(--green);background:var(--surface);min-width:0}.crypto-summary h2{font:400 clamp(1.5rem,3vw,2rem)/1.4 Georgia,'SimSun',serif}.crypto-summary p{line-height:1.9;max-width:90ch}.crypto-summary a{display:inline-block;margin:.5rem 0}</style>

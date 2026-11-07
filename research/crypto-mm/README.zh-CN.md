@@ -49,3 +49,5 @@
 ## 小时线因子诊断
 
 独立离线 CLI 为 `python -m crypto_mm.factors --spec /absolute/private/factor-protocol.json --output-root /absolute/data/new-factor-run`，需要不可变的小时线 manifest 和匹配的冻结源码。根工具 `team factors` 调用已安装 CLI，不传递服务商凭据。定义与限制见[因子说明](../../docs/research/strategies.zh-CN.md#hourly-dex-factors)，配置见[数据准备](../../docs/research/datasets.zh-CN.md#dexpaprika-hourly-pilot)。合成交付验证已通过；2026-10-22 的真实检查返回 HTTP403，没有获得行情观测或因子结果。
+
+[后续验收与参数匹配序列对照](../../docs/research/crypto-followup.zh-CN.md)

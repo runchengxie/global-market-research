@@ -66,3 +66,5 @@ The initial failed worker startup is retained. The replacement protocol's CLI or
 Public Pages may display measured aggregates, intervals, fold and cost comparisons and documented limitations. Individual predictions, raw inputs, account records and private configuration remain external. Static/no-JavaScript tables retain all public facts. New chart/validation/controller modules use strict TypeScript and load chart code on request. Tests reject private fields and obsolete synthetic-only wording and require the public fixture's projection-code hash to match its normalized source.
 
 The stock protocol's six owner-evidence gaps and the registered observation registry remain separate. This crypto pilot does not resolve them, expand execution products, authorize research acceptance or submit orders. See [sequence target study](sequence-target-study.md) and [observation registry](observation-registry.md).
+
+[Follow-up journal and sequence comparison](crypto-followup.md)

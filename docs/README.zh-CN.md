@@ -28,3 +28,5 @@
 [Paper 仓位分配](operations/paper-allocation.zh-CN.md)
 
 - [BTC/ETH小时因子筛查、预先预测与运行状态](research/crypto-evidence.zh-CN.md)
+
+- [加密后续探索：前瞻验收与参数接近的LSTM/MoE对照](research/crypto-followup.zh-CN.md)

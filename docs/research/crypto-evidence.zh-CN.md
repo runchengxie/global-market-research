@@ -66,3 +66,5 @@ python -m competition_tools.evaluation.crypto_watch \
 Pages可以展示实测汇总、区间、时间折、成本对照和局限。逐个预测、原始输入、账户记录及私有配置保留在外部；静态及无脚本表格保留完整公开事实。新增校验、图表和控制器使用严格TS，图表代码按需加载。测试拒绝私有字段和过时的合成限制，并要求公开JSON中的投影代码摘要匹配规范化源码。
 
 股票前瞻协议的六项所有者证据缺口和已注册观察治理保持独立。这个加密货币试验不自动解决它们、不扩展执行产品、不晋升研究接受或下单。参见[序列目标实验](sequence-target-study.zh-CN.md)及[观察登记](observation-registry.zh-CN.md)。
+
+[后续研究记录与序列模型对照](crypto-followup.zh-CN.md)

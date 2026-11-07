@@ -4,7 +4,9 @@ from competition_tools.evaluation.crypto_audit import audit_receipts
 
 
 def test_reconstruct_score_and_reject_duplicate_or_future():
-    t = lambda h: f"2026-11-07T{h:02}:00:00+00:00"
+    def t(h):
+        return f"2026-11-07T{h:02}:00:00+00:00"
+
     forecast = dict(
         id="f",
         candidate="price_only-1h",

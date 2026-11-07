@@ -1,0 +1,30 @@
+---
+import raw from '../data/crypto-followup.v1.json';
+import {validateCryptoFollowup} from '../lib/crypto-followup';
+import en from '../i18n/crypto-followup-en.json';
+import zh from '../i18n/crypto-followup-zh-CN.json';
+const locale=Astro.props.locale==='zh-CN'?'zh-CN':'en',t=locale==='en'?en:zh,data=validateCryptoFollowup(raw),f=data.forward,c=data.comparison;
+const number=(v:number)=>new Intl.NumberFormat(locale,{maximumFractionDigits:3}).format(v);
+const pct=(v:number|null)=>v===null?'—':new Intl.NumberFormat(locale,{style:'percent',maximumFractionDigits:2}).format(v);
+const date=(v:string)=>new Intl.DateTimeFormat(locale,{timeZone:'UTC',dateStyle:'medium',timeStyle:'short'}).format(new Date(v));
+const names=t.kindNames as Record<string,string>;
+const rules=t as unknown as Record<string,string>;
+const primary=c.aggregates.filter(r=>r.fee_bps===10&&r.rule==='validation');
+const fixed=(kind:string)=>c.aggregates.find(r=>r.kind===kind&&r.fee_bps===10&&r.rule==='fixed')!;
+const cash=data.diagnostics.rows.filter(r=>r.model==='price_only');
+const counters=[[t.committed,f.committed],[t.scored,f.scored],[t.pending,f.pending],[t.mature,f.mature_unscored],[t.timely,f.observed_bars],[t.revisions,f.revisions]] as const;
+---
+<section class="followup" data-crypto-followup data-fit-count={c.fits_completed} id="research-journal">
+ <header><p class="eyebrow">QUANT / LAB · {t.snapshot}: {date(data.as_of)}</p><h1>{t.title}</h1><p class="lead">{t.intro}</p></header>
+ <section><h2>{t.auditTitle}</h2><p>{t.auditNote}</p><p>{t.snapshot}: <time datetime={f.as_of}>{date(f.as_of)}</time></p><dl class="counters">{counters.map(([label,value])=><div><dt>{label}</dt><dd>{number(value)}</dd></div>)}</dl><p>{t.violations}: <strong>{f.deadline_violations} / {f.score_reconstruction_violations}</strong> · {t.auditSkill}: <strong>{pct(f.skill)}</strong></p><details><summary>{t.prefix}</summary><code>{f.prefix_head}</code></details></section>
+ <section><h2>{t.cashTitle}</h2><p>{t.cashNote}</p><div class="table-scroll" tabindex="0"><table data-followup-cash><thead><tr><th>{t.grain}</th><th>{t.fold}</th><th>{t.p99}</th><th>{t.target99}</th><th>{t.over0}</th><th>{t.over10}</th><th>{t.over20}</th></tr></thead><tbody>{cash.map(r=><tr><th>{r.step_hours}</th><td>{r.fold+1}</td><td>{pct(r.prediction_quantiles[5])}</td><td>{pct(r.target_quantiles[5])}</td>{r.above_hurdles.map(v=><td>{pct(v)}</td>)}</tr>)}</tbody></table></div></section>
+ <section><h2>{t.modelTitle}</h2><p>{t.modelNote.replace('{seconds}',number(c.elapsed_seconds))}</p><p>{t.policyNote}</p><p>{t.aggregationNote}</p><div class="table-scroll" tabindex="0"><table data-followup-models><thead><tr><th>{t.model}</th><th>{t.parameters}</th><th>{t.skill}</th><th>{t.fixedReturn}</th><th>{t.selectedReturn}</th><th>{t.exposure}</th><th>{t.range}</th><th>{t.drawdown}</th></tr></thead><tbody>{primary.map(r=><tr><th>{names[r.kind]}</th><td>{number(c.architecture[r.kind as keyof typeof c.architecture])}</td><td>{pct(r.skill)}</td><td>{pct(fixed(r.kind).net_return)}</td><td>{pct(r.net_return)}</td><td>{pct(r.exposure)}</td><td>{pct(r.min_return)} … {pct(r.max_return)}</td><td>{pct(r.max_drawdown)}</td></tr>)}</tbody></table></div>
+ <details data-followup-details><summary>{t.details}</summary><div class="table-scroll" tabindex="0"><table data-followup-folds><thead><tr>{[t.model,t.fold,t.seed,t.rule,t.hurdle,t.fee,t.skill,t.selectedReturn,t.exposure,t.drawdown].map(v=><th>{v}</th>)}</tr></thead><tbody>{c.rows.map(r=><tr><th>{names[r.kind]}</th><td>{r.fold+1}</td><td>{r.seed}</td><td>{rules[r.rule]}</td><td>{number(r.hurdle*10000)}</td><td>{r.fee_bps}</td><td>{pct(r.skill)}</td><td>{pct(r.net_return)}</td><td>{pct(r.exposure)}</td><td>{pct(r.max_drawdown)}</td></tr>)}</tbody></table></div></details>
+ <details><summary>{t.gatesTitle}</summary><p>{t.gateNote}</p><div class="table-scroll" tabindex="0"><table><thead><tr><th>{t.fold}</th><th>{t.seed}</th><th>{t.weights}</th><th>{t.entropy}</th></tr></thead><tbody>{c.gates.filter(r=>r.kind==='dense').map(r=><tr><th>{r.fold+1}</th><td>{r.seed}</td><td>{r.mean_weights.map(pct).join(' / ')}</td><td>{number(r.entropy)}</td></tr>)}</tbody></table></div></details></section>
+ <section><h2>{t.providerTitle}</h2><p>{t.providerNote}</p><a href={t.providerHref}>{t.providerLink} →</a></section>
+ <section><h2>{t.nextTitle}</h2><p>{t.nextNote}</p></section>
+ <details data-followup-sources><summary>{t.sourcesTitle}</summary><p>{t.sourcesNote}</p><dl>{Object.entries(data.sources).map(([key,value])=><div><dt>{t.sourceNames[key as keyof typeof t.sourceNames]}</dt><dd><code>{value}</code></dd></div>)}</dl></details>
+</section>
+<style>
+.followup{border-bottom:1px solid var(--line);padding:2rem 0 3rem;min-width:0}.eyebrow{font-size:.78rem;letter-spacing:.04em}.lead{font-size:1.12rem;max-width:80ch}h1{font-size:clamp(1.9rem,4vw,3rem);line-height:1.15}h2{font-size:1.3rem;margin-top:2rem}.followup p{max-width:90ch;line-height:1.75}.counters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}.counters div{border:1px solid var(--line);border-radius:10px;padding:1rem}.counters dd{font-size:1.8rem;margin:.35rem 0 0;font-variant-numeric:tabular-nums}.table-scroll{overflow-x:auto;max-width:100%;margin:1rem 0}table{width:100%;border-collapse:collapse;font-size:.85rem}th,td{padding:.7rem;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}thead th{font-size:.75rem}details{margin:1.25rem 0;min-width:0}summary{cursor:pointer;font-weight:600;line-height:1.6}code{overflow-wrap:anywhere;font-size:.78rem}dd{margin-left:0}a{color:inherit;text-underline-offset:3px}@media(max-width:650px){.counters{grid-template-columns:repeat(2,minmax(0,1fr))}.counters div{padding:.75rem}.counters dt{font-size:.8rem}.counters dd{font-size:1.5rem}}
+</style>

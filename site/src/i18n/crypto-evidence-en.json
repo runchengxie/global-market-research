@@ -109,5 +109,6 @@
     "budget_debit": "Supplemental budget debit seal",
     "receipt_chain_head": "Published observation chain-head seal"
   },
-  "late": "Late backfilled asset-bars"
+  "late": "Late backfilled asset-bars",
+  "followupSummary": "Additional research: {fits} comparable sequence fits and {scored} audited forward scores. See the journal for the later snapshot and its limitations."
 }

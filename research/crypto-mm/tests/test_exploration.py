@@ -1,7 +1,7 @@
 import pytest
 
 np = pytest.importorskip("numpy")
-from crypto_mm.exploration.diagnostics import distribution
+from crypto_mm.exploration.diagnostics import distribution  # noqa: E402
 
 
 def test_cash_distribution_uses_fixed_hurdles_not_outcome_selected():
@@ -47,7 +47,10 @@ def test_parameter_match_and_task_gradient():
 
     dense = Model("dense")
     single = Model("matched")
-    count = lambda m: sum(p.numel() for p in m.parameters())
+
+    def count(m):
+        return sum(p.numel() for p in m.parameters())
+
     assert abs(count(dense) - count(single)) / count(dense) < 0.06
     assert matched_width() > 8
     x = torch.randn(4, 12, 7)
