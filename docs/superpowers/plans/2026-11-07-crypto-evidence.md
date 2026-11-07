@@ -24,21 +24,21 @@
 ### Task1: Verified hourly acquisition
 **Files:** create datasets/binance_intraday.py, intraday_transport.py, crypto_evidence.py and tests/competition_tools/test_crypto_evidence.py (paths under src/competition_tools).
 **Interfaces:** freeze_intraday_plan(output:Path,now:datetime)->dict; acquire_intraday(plan:Path,output:Path,transport)->dict; verify_intraday(path:Path)->dict. Manifest contains files, coverage, source/units, budget ledger and accepted_research=false.
-- [ ] Test checksum/unit/close/grid/ZIP attacks and budget/containment with synthetic archives, run RED.
+- [ ] Test checksum/unit/close/grid/ZIP attacks and budget/containment/same-plan repeated-run claims with synthetic archives, run RED.
 - [ ] Implement strict plan/worker/parser/receipt and4h aggregation; GREEN and commit.
 - [ ] Freeze real plan at a clean revision, acquire bounded monthly inputs once, retain complete/partial receipt.
 
 ### Task2: Bounded independent sentiment screen
 **Files:** create crypto_mm/intraday/{inputs,features,study,cli}.py and corresponding tests; optional predictive extra/lock.
 **Interfaces:** run_screen(manifest:Path,sentiment:Path,sentiment_sha256:str,output:Path)->dict; verified summary/scores/models/account artifacts. Four-arm fixed24fit schedule and explicit blocked verified arm.
-- [ ] Test causal execution/purging, proxy delays/common dates, fit-only scales, budget interrupts and initial/terminal accounting RED.
+- [ ] Test causal execution/purging, proxy delays/common dates, one-bar versus24/168h windows, plan-bound fit claims, fit-only scales, budget interrupts and initial/terminal accounting RED.
 - [ ] Implement fixed Ridge/prior/trend/holding/cash, metrics and paired block uncertainty; GREEN/commit.
 - [ ] Run the complete screen on verified real inputs at clean source; reconstruct scores and seal output.
 
 ### Task3: Prospective receipts and local monitor
 **Files:** create evaluation/crypto_observation.py, crypto_monitor.py and focused root tests.
 **Interfaces:** freeze_observation(output:Path,inputs:dict,now:datetime)->dict; capture_observation(protocol:Path,output:Path,transport,now:datetime)->dict; monitor(paths:list[Path],as_of:datetime)->dict. CLI clocks real UTC, APIs injectable for tests.
-- [ ] Test freeze/cutoff/first-seen/warmup, stale factor source, revisions, exclusive receipt/containment, corrupt/unknown monitor statuses RED.
+- [ ] Test freeze/cutoff/first-seen/warmup, frozen coefficient forecasts committed before entry, separate observed/forecast/scored counts, no premature scoring, stale factor source, revisions, exclusive receipt/containment, corrupt/unknown monitor statuses RED.
 - [ ] Implement manual bounded public capture and read-only local report; GREEN/commit.
 - [ ] Freeze real protocol and capture first receipt; report eligible future count truthfully, retain stable runtime instructions.
 
