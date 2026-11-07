@@ -57,6 +57,10 @@ def review_decision(policy, inputs, decision_time):
                 raise ValueError("INVALID_POLICY_BINDING")
     except (KeyError, TypeError, ValueError):
         blockers.append("POLICY_INVALID")
+    if inputs.get("declaration_sha256") != policy.get(
+        "declaration_sha256"
+    ) or not policy.get("declaration_sha256"):
+        blockers.append("DECLARATION_BINDING_UNVERIFIED")
     sources = inputs.get("sources", {})
     times = {}
     for key in ["account", "pit", "universe", "model", "scores", "target"]:

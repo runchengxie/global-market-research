@@ -155,6 +155,7 @@ def test_complete_review_requires_causal_sources_and_checks_drift():
         max_age_hours=24,
     )
     inputs = dict(
+        declaration_sha256="b" * 64,
         account_ref="synthetic",
         current_weights={"A": "0.5"},
         target_weights={"A": "0.5"},
@@ -224,6 +225,7 @@ def test_invalid_policy_and_republished_old_evidence_cannot_maintain():
         max_age_hours=24,
     )
     inputs = dict(
+        declaration_sha256="b" * 64,
         account_ref="synthetic",
         current_weights={"A": "0.5"},
         target_weights={"A": "0.5"},
