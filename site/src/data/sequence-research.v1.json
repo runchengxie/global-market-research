@@ -102,15 +102,149 @@
     "volatility_return": 0.03712198135876221
   },
   "target": {
-    "status": "pending",
+    "status": "completed",
     "folds": 7,
     "seeds": 3,
-    "cases": 0,
-    "fits": 0,
+    "cases": 175,
+    "fits": 140,
     "epochs": 30,
     "batch_size": 128,
-    "rows": [],
-    "continuation": []
+    "rows": [
+      {
+        "objective": "classification",
+        "model": "prior",
+        "cases": 7,
+        "skill": 0.0,
+        "ic": null,
+        "net_return": 0.0,
+        "threshold_return": 0.03756639597543976,
+        "exposure": 0.0,
+        "threshold_exposure": 0.8571428571428571,
+        "volatility": 0.0
+      },
+      {
+        "objective": "classification",
+        "model": "linear",
+        "cases": 7,
+        "skill": -0.03732873496649499,
+        "ic": 0.040573535811631055,
+        "net_return": 0.022725954704282847,
+        "threshold_return": 0.027480525335764838,
+        "exposure": 0.39236402750535476,
+        "threshold_exposure": 0.8196246657674541,
+        "volatility": 0.10362886748406659
+      },
+      {
+        "objective": "classification",
+        "model": "matched",
+        "cases": 21,
+        "skill": -0.0040812290626353375,
+        "ic": 0.012799193751574704,
+        "net_return": 0.0,
+        "threshold_return": 0.03756639597543976,
+        "exposure": 0.11062243049804212,
+        "threshold_exposure": 0.8571428571428571,
+        "volatility": 0.03975570384162776
+      },
+      {
+        "objective": "classification",
+        "model": "equal",
+        "cases": 21,
+        "skill": -0.00046118725617383394,
+        "ic": 0.017595455690693783,
+        "net_return": 0.0,
+        "threshold_return": 0.03756639597543976,
+        "exposure": 0.03439935870819412,
+        "threshold_exposure": 0.8571428571428571,
+        "volatility": 0.019073114634905027
+      },
+      {
+        "objective": "classification",
+        "model": "sparse",
+        "cases": 21,
+        "skill": -0.0022551165654786415,
+        "ic": 0.01871320918939966,
+        "net_return": 0.0001918774967815858,
+        "threshold_return": 0.03818819253885416,
+        "exposure": 0.1483155791409286,
+        "threshold_exposure": 0.8600035251004085,
+        "volatility": 0.05236676498717632
+      },
+      {
+        "objective": "regression",
+        "model": "prior",
+        "cases": 7,
+        "skill": 0.0,
+        "ic": null,
+        "net_return": 0.0,
+        "threshold_return": 0.03756639597543976,
+        "exposure": 0.5714285714285714,
+        "threshold_exposure": 0.8571428571428571,
+        "volatility": 0.10750043925371004
+      },
+      {
+        "objective": "regression",
+        "model": "linear",
+        "cases": 7,
+        "skill": -0.07358447777045656,
+        "ic": 0.04199821342678485,
+        "net_return": 0.011542534451552289,
+        "threshold_return": 0.0252563391768319,
+        "exposure": 0.5041708870202763,
+        "threshold_exposure": 0.4901137005142195,
+        "volatility": 0.11603648041068436
+      },
+      {
+        "objective": "regression",
+        "model": "matched",
+        "cases": 21,
+        "skill": -0.003967471700567084,
+        "ic": 0.017190804492391795,
+        "net_return": 0.04082717671561394,
+        "threshold_return": 0.048428766902496534,
+        "exposure": 0.565561992969847,
+        "threshold_exposure": 0.8214389215451706,
+        "volatility": 0.1180840318256902
+      },
+      {
+        "objective": "regression",
+        "model": "equal",
+        "cases": 21,
+        "skill": -0.001239437703216302,
+        "ic": 0.014352138161661972,
+        "net_return": 0.02059252252006531,
+        "threshold_return": 0.039741773259669065,
+        "exposure": 0.5379595681936779,
+        "threshold_exposure": 0.8274764907501823,
+        "volatility": 0.11202392642038406
+      },
+      {
+        "objective": "regression",
+        "model": "sparse",
+        "cases": 21,
+        "skill": -0.0017702573673557675,
+        "ic": 0.012481580735548992,
+        "net_return": 0.03721037910796291,
+        "threshold_return": 0.03781476768314129,
+        "exposure": 0.5978814296228142,
+        "threshold_exposure": 0.8203134007115542,
+        "volatility": 0.12233343854389994
+      }
+    ],
+    "continuation": [
+      {
+        "objective": "classification",
+        "status": "continue_deferred",
+        "passed_checks": 1,
+        "total_checks": 11
+      },
+      {
+        "objective": "regression",
+        "status": "continue_deferred",
+        "passed_checks": 2,
+        "total_checks": 11
+      }
+    ]
   },
   "explorations": [
     {
@@ -133,9 +267,9 @@
     },
     {
       "id": "targets",
-      "status": "pending",
-      "cases": 0,
-      "fits": 0
+      "status": "completed",
+      "cases": 175,
+      "fits": 140
     },
     {
       "id": "transformer",
@@ -153,6 +287,7 @@
   "source_revisions": {
     "primary": "cfe4480b079c972c4c2aa719a7bb044a65f42780",
     "diagnostics": "b8a42e2b8bd20681e200fb823c80e0c8a50bf558",
-    "target": null
+    "target": "51b51c4688ce6b40ad367e578be7e3bed5d8f8d1",
+    "analysis": "e2bfd3a713c97ac4fe831f0aa33bc8e886a82938"
   }
 }

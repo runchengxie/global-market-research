@@ -13,7 +13,7 @@ export interface ResearchProjection {
  primary: { folds:number; seeds:number; cases:number; fee_bps:number; rows:PrimaryRow[]; holding_return:number; volatility_return:number };
  target: { status:'pending'|'completed'; folds:number; seeds:number; cases:number; fits:number; epochs:number; batch_size:number; rows:TargetRow[]; continuation:{objective:Objective;status:GateStatus;passed_checks:number;total_checks:number}[] };
  explorations: {id:ExplorationId;status:'completed'|'pending'|'planned';cases:number;fits:number}[];
- source_revisions: {primary:string;diagnostics:string;target:string|null};
+ source_revisions: {primary:string;diagnostics:string;target:string|null;analysis:string|null};
 }
 const fail=(): never=>{throw new Error('Invalid aggregate sequence research projection');};
 function keys(value: unknown,allowed: readonly string[]){if(!value||Array.isArray(value)||typeof value!=='object'||Object.keys(value).length!==allowed.length||Object.keys(value).some(k=>!allowed.includes(k)))fail();}
@@ -46,7 +46,7 @@ export function validateResearchProjection(input: unknown): ResearchProjection {
  for(const r of d.target.continuation){keys(r,['objective','status','passed_checks','total_checks']);if(!['classification','regression'].includes(r.objective)||!['continue_deferred','promising_retrospective','insufficient_evidence'].includes(r.status))fail();integer(r.passed_checks);integer(r.total_checks);if(r.passed_checks>r.total_checks)fail();}
  if(!Array.isArray(d.explorations)||d.explorations.length!==6||new Set(d.explorations.map(r=>r.id)).size!==6)fail();
  for(const r of d.explorations){keys(r,['id','status','cases','fits']);if(!['primary','checkpoint','diagnostics','targets','transformer','crypto'].includes(r.id)||!['completed','pending','planned'].includes(r.status))fail();integer(r.cases);integer(r.fits);}
- keys(d.source_revisions,['primary','diagnostics','target']);for(const [k,v] of Object.entries(d.source_revisions))if(!(k==='target'&&d.target.status==='pending'&&v===null)&&(typeof v!=='string'||!/^[a-f0-9]{7,40}$/.test(v)))fail();
+ keys(d.source_revisions,['primary','diagnostics','target','analysis']);for(const [k,v] of Object.entries(d.source_revisions))if(!(['target','analysis'].includes(k)&&d.target.status==='pending'&&v===null)&&(typeof v!=='string'||!/^[a-f0-9]{7,40}$/.test(v)))fail();
  return d;
 }
 export function selectResearchRows(data: ResearchProjection,selection: string): ResearchRow[]{validateResearchProjection(data);if(selection==='primary')return data.primary.rows;if(!['classification','regression'].includes(selection))throw Error('Unknown sequence study');return data.target.rows.filter(r=>r.objective===selection);}

@@ -140,6 +140,7 @@ def project(primary, diagnostics, target=None, target_run=None):
             primary=config["source_revision"]["revision"],
             diagnostics=old["source"]["code_revision"],
             target=None,
+            analysis=None,
         ),
     )
     if target is not None:
@@ -196,6 +197,7 @@ def project(primary, diagnostics, target=None, target_run=None):
             )
         result["explorations"][3].update(status="completed", cases=175, fits=140)
         result["source_revisions"]["target"] = tc["source"]["revision"]
+        result["source_revisions"]["analysis"] = ac["source"]["revision"]
     return result
 
 
