@@ -14,6 +14,7 @@ from competition_tools.crypto_evidence import (
     seal,
 )
 from competition_tools.datasets.storage import write_json
+from competition_tools.datasets.binance_intraday import verify_intraday
 from competition_tools.evaluation.crypto_observation import (
     instant,
     canonical_hash,
@@ -342,7 +343,7 @@ def project(dataset, study, protocol, monitor):
     dataset, study, protocol, monitor = map(Path, [dataset, study, protocol, monitor])
     for p in [dataset, study, protocol, monitor]:
         verify_seal(p)
-    data = read_json(dataset / "manifest.json")
+    data = verify_intraday(dataset)
     result = read_json(study / "summary.json")
     plan = read_json(study / "plan.json")
     frozen = read_json(protocol / "protocol.json")

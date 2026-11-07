@@ -2929,7 +2929,7 @@
     "monitor_seal": "7b6ae72cf63f39f95ec25f98eb6ae3508b9a84b91cbc1f11318fbf72dbc26723",
     "factor_snapshot": "812c0b4dfa504c7b0e92e25f262f25dad6f51b866d62aa64f148016384c4ba4b",
     "producer_fingerprint": "f2e1fb7b06ad6a498ef6710cad636967844416cf876e56b8a0e689e3d5ed82ba",
-    "projection_code": "9256978a6e4eb43dbefb7cd543731b6ca0ac4db4ab5de960e298143d2eaf7897",
+    "projection_code": "5ebfe1ba182d96cce5fcfa6697ca1618f0baca9cdd4f60964f9a03fcb25c3631",
     "receipt_chain_head": "dec53849411ca9232224d5a0867bec8889875c45daa7db4afd36e73ed2d9377b",
     "budget_debit": "f20d292fd40cac81cf9c7d159de3606e28cafccfac938ddc5da14fce21db80ab"
   }

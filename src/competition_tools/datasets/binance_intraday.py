@@ -286,6 +286,8 @@ def acquire_intraday(plan_file, output, transport):
                     w.writerows(values)
         if digest(plan_file) != plan_digest:
             raise ValueError("PLAN_CHANGED")
+        if time.monotonic() - start >= BUDGET["seconds"]:
+            raise TimeoutError("ACQUISITION_DEADLINE")
         ledger.update(status="completed", elapsed_seconds=time.monotonic() - start)
     except (Exception, KeyboardInterrupt) as exc:
         ledger.update(
@@ -331,4 +333,22 @@ def verify_intraday(path):
         or m["products"] != PRODUCTS
     ):
         raise ValueError("INCOMPLETE_HOURLY_INPUT")
+    budget = m.get("budget", {})
+    if (
+        budget.get("status") != "completed"
+        or budget.get("unknown_spend") is not False
+        or budget.get("completed_resources") != 96
+        or type(budget.get("attempts")) is not int
+        or not 96 <= budget["attempts"] <= BUDGET["attempts"]
+        or any(
+            type(budget.get(k)) not in [int, float]
+            or not math.isfinite(budget[k])
+            or not 0 < budget[k] <= BUDGET[k]
+            for k in ["transferred_bytes", "expanded_bytes"]
+        )
+        or type(budget.get("elapsed_seconds")) not in [int, float]
+        or not math.isfinite(budget["elapsed_seconds"])
+        or not 0 < budget["elapsed_seconds"] < BUDGET["seconds"]
+    ):
+        raise ValueError("ACQUISITION_BUDGET_EVIDENCE")
     return m

@@ -601,3 +601,85 @@ def test_bounded_watch_process_completes_with_no_system_scheduler(observer, tmp_
     assert transport.calls == 4
     assert not protocol.with_name(protocol.name + ".captures.watch-lock").exists()
     verify_seal(tmp_path / "watch")
+
+
+def test_acquisition_deadline_covers_final_aggregation_and_writes(
+    tmp_path, monkeypatch
+):
+    import types
+    import competition_tools.datasets.binance_intraday as module
+
+    clock = {"elapsed": 0.0}
+    monkeypatch.setattr(
+        module,
+        "time",
+        types.SimpleNamespace(monotonic=lambda: clock["elapsed"], sleep=lambda _: None),
+    )
+
+    def normalize(body, checksum, product, month):
+        return [
+            dict(
+                asset=product,
+                time_open=month + "-01T00:00:00Z",
+                interval_end=month + "-01T01:00:00Z",
+                open=100.0,
+                high=101.0,
+                low=99.0,
+                close=100.0,
+                volume=1.0,
+            )
+        ]
+
+    monkeypatch.setattr(module, "normalize_hourly", normalize)
+
+    def final(rows):
+        clock["elapsed"] = 601.0
+        return rows
+
+    monkeypatch.setattr(module, "aggregate_four", final)
+
+    class Transport:
+        def fetch(self, url, **kwargs):
+            clock["elapsed"] = 590.0
+            if url.endswith(".CHECKSUM"):
+                return 200, b"checksum"
+            data = io.BytesIO()
+            with zipfile.ZipFile(data, "w") as z:
+                z.writestr("synthetic.csv", "x")
+            return 200, data.getvalue()
+
+    module.freeze_intraday_plan(
+        tmp_path / "plan", now=datetime(2026, 11, 7, tzinfo=timezone.utc)
+    )
+    result = module.acquire_intraday(
+        tmp_path / "plan/plan.json", tmp_path / "run", Transport()
+    )
+    assert result["status"] == "partial" and "DEADLINE" in result["budget"]["reason"]
+    assert result["budget"]["completed_resources"] == 96
+
+
+def test_completed_seal_cannot_override_acquisition_budget(tmp_path):
+    import json
+    from competition_tools.datasets.binance_intraday import verify_intraday, PRODUCTS
+
+    folder = tmp_path / "artifact"
+    folder.mkdir()
+    manifest = dict(
+        schema="crypto.hourly_manifest.v1",
+        status="completed",
+        accepted_research=False,
+        products=PRODUCTS,
+        budget=dict(
+            status="completed",
+            attempts=96,
+            transferred_bytes=1000,
+            expanded_bytes=1000,
+            unknown_spend=False,
+            completed_resources=96,
+            elapsed_seconds=601.0,
+        ),
+    )
+    (folder / "manifest.json").write_text(json.dumps(manifest))
+    seal(folder)
+    with pytest.raises(ValueError):
+        verify_intraday(folder)

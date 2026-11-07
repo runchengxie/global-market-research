@@ -13,6 +13,7 @@ from competition_tools.crypto_evidence import (
     seal,
 )
 from competition_tools.datasets.storage import write_json
+from competition_tools.datasets.binance_intraday import verify_intraday
 from .crypto_observation import observation_history, instant
 
 
@@ -36,7 +37,7 @@ def monitor(dataset, study, protocol, *, as_of):
         try:
             verify_seal(path)
             if name == "acquisition":
-                value = read_json(path / "manifest.json")
+                value = verify_intraday(path)
                 report[name] = dict(
                     status=value["status"],
                     coverage=value["coverage"],
