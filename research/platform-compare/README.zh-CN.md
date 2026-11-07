@@ -16,7 +16,7 @@ uv sync --locked --group dev --project research/platform-compare
 & $comparisonPython -m platform_compare.cli verify --request $requestJson --dataset-root $datasetRoot --bundle $newBundleDirectory
 ```
 
-输入、环境和输出包均存放在解析后的 `DATA_ROOT/2026-quant-competition/` 下，不能放进源码。输出目录必须尚不存在。当前只有交易日期的历史 CSV 不具备所需的因果时钟，不能根据文件名或日期推断可用时间、成交时间、汇率和每手数量。
+输入、环境和输出包均存放在解析后的 `DATA_ROOT/global-market-research/` 下，不能放进源码。输出目录必须尚不存在。当前只有交易日期的历史 CSV 不具备所需的因果时钟，不能根据文件名或日期推断可用时间、成交时间、汇率和每手数量。
 
 ## 输入与输出契约
 

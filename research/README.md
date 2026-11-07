@@ -12,7 +12,7 @@ Use the [team quickstart](../docs/operations/team-quickstart.md) for isolated se
 
 Each directory is an independent Python 3.12 project with its own `uv.lock`, tests and MIT license. Install and run checks from that directory. Root execution dependencies and tests remain separate; root Ruff covers the new files. English is canonical; reader documentation is also available in zh-CN. No runtime locale system is implemented.
 
-Generated data and reports belong under the configured external `DATA_ROOT/2026-quant-competition/research/` owner directory. None of these packages connects to a broker. Their artifacts are not executable target handoffs. The published v1 JSON schema accepts JP/US, while runtime market normalization also recognizes HK. This existing mismatch remains unresolved; crypto is unsupported. Competition eligibility and live-market validity require separate checks. See each package's limitations before interpreting results.
+Generated data and reports belong under the configured external `DATA_ROOT/global-market-research/research/` owner directory. None of these packages connects to a broker. Their artifacts are not executable target handoffs. The published v1 JSON schema accepts JP/US, while runtime market normalization also recognizes HK. This existing mismatch remains unresolved; crypto is unsupported. Competition eligibility and live-market validity require separate checks. See each package's limitations before interpreting results.
 
 MIT applies only to the new subproject code. This addition does not license existing root code or third-party dependencies.
 

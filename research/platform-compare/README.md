@@ -16,7 +16,7 @@ uv sync --locked --group dev --project research/platform-compare
 & $comparisonPython -m platform_compare.cli verify --request $requestJson --dataset-root $datasetRoot --bundle $newBundleDirectory
 ```
 
-All inputs, environments and output bundles belong outside source under resolved `DATA_ROOT/2026-quant-competition/`. The output directory must not already exist. Current session-date-only historical CSV files cannot supply the explicit causal clocks required here. Do not infer availability, execution times, FX or lot sizes from their names or dates.
+All inputs, environments and output bundles belong outside source under resolved `DATA_ROOT/global-market-research/`. The output directory must not already exist. Current session-date-only historical CSV files cannot supply the explicit causal clocks required here. Do not infer availability, execution times, FX or lot sizes from their names or dates.
 
 ## Input and output contract
 

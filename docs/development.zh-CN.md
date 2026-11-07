@@ -5,7 +5,7 @@
 下面的命令都在项目根目录运行。先把 `DATA_ROOT` 设为源码之外的绝对路径，可以从已有工作区配置读取，也可以明确指定一个外部目录。开发环境和需要保留的测试输出放在那里。
 
 ```powershell
-$env:UV_PROJECT_ENVIRONMENT = Join-Path $env:DATA_ROOT "2026-quant-competition/environments/dev"
+$env:UV_PROJECT_ENVIRONMENT = Join-Path $env:DATA_ROOT "global-market-research/environments/dev"
 ```
 
 ## Python 检查
