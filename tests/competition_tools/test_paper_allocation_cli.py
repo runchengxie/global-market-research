@@ -45,7 +45,14 @@ def test_cli_defaults_offline_and_requires_no_ibkr(tmp_path, capsys):
     # Fix a valid window without needing an open market for offline planning.
     from datetime import timedelta
 
-    spec = AllocationSpec(**{**vars(spec), "window_end": now + timedelta(minutes=10)})
+    window_start = now.replace(hour=12, minute=0, second=0, microsecond=0)
+    spec = AllocationSpec(
+        **{
+            **vars(spec),
+            "window_start": window_start,
+            "window_end": window_start + timedelta(minutes=10),
+        }
+    )
     path.write_text(json.dumps(spec.to_dict()))
     assert main(["--spec", str(path), "--snapshot", str(snapshot)]) == 0
     value = json.loads(capsys.readouterr().out)
