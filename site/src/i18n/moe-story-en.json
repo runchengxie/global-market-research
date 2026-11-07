@@ -50,7 +50,7 @@
   "headNote": "The real task interprets its output as a classification probability or a return estimate. This toy shows only a raw illustrative score.",
   "toyScore": "Illustrative raw score",
   "lensTitle": "Zoom into one reader’s LSTM",
-  "lensNote": "The notebook is an analogy. A real LSTM carries cell and hidden-state vectors. This small scalar gate demo is separate from the compressed note coordinates above. Gate values are learned during training; they need not have a clear economic meaning.",
+  "lensNote": "The notebook is an analogy. A real LSTM carries cell and hidden-state vectors. This small scalar gate demo is separate from the compressed note coordinates above. Training learns gate parameters; each step recomputes gate values from the current input and previous hidden state. The values need not have a clear economic meaning.",
   "keep": "Keep some old memory",
   "write": "Add some new information",
   "readout": "Let some information through",

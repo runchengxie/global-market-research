@@ -20,3 +20,11 @@ const {memoryStep}=await import('../src/lib/moe-story.ts');
 const m=memoryStep(0,0,0);
 assert.equal(m.previous,0);assert.equal(m.cell,m.forget*m.previous+m.write*m.candidate);assert.equal(m.hidden,m.output*Math.tanh(m.cell));
 assert.notEqual(memoryStep(0,0,1).previous,0);assert.throws(()=>memoryStep(0,0,5));
+// Teaching contract: train gate parameters; recompute gate values at each step.
+const {readFileSync}=await import('node:fs');
+const en=JSON.parse(readFileSync(new URL('../src/i18n/moe-story-en.json',import.meta.url),'utf8'));
+const zh=JSON.parse(readFileSync(new URL('../src/i18n/moe-story-zh-CN.json',import.meta.url),'utf8'));
+assert.doesNotMatch(en.lensNote,/Gate values are learned during training/);
+assert.doesNotMatch(zh.lensNote,/门值通过训练学习/);
+assert.match(en.lensNote,/parameters/);assert.match(en.lensNote,/each step/i);
+assert.match(zh.lensNote,/参数/);assert.match(zh.lensNote,/每一步/);
