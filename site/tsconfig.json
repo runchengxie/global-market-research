@@ -20,6 +20,8 @@
     "src/lib/sequence-*.ts",
     "src/scripts/sequence-*.ts",
     "src/lib/crypto-*.ts",
-    "src/scripts/crypto-*.ts"
+    "src/scripts/crypto-*.ts",
+    "src/lib/moe-*.ts",
+    "src/scripts/moe-*.ts"
   ]
 }
