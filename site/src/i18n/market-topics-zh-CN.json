@@ -58,5 +58,8 @@
   "statusPending": "待补充检验",
   "statusHistorical": "历史实验待核实",
   "sequenceTitle": "LSTM 与专家路由",
-  "sequenceBody": "使用明确交易时间的序列模型对照，以及合成交互图示例。"
+  "sequenceBody": "使用明确交易时间的序列模型对照，以及合成交互图示例。",
+  "cryptoEvidenceTitle": "BTC/ETH价格与AIVIX因子实测",
+  "cryptoEvidenceBody": "完整小时/四小时数据上的24次固定线性拟合；因子时点仍未核验，平均预测误差没有改善。",
+  "cryptoEvidenceScope": "历史筛查与单独保存的预先预测记录，尚无已建立的前瞻表现。"
 }

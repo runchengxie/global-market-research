@@ -48,3 +48,5 @@ python -m competition_tools.evaluation.sequence_readiness \
 区分实际保留粒度和服务能力。本轮检查的完整八币Binance输入是日频；BTC/ETH AIVIX因子快照也是日频，历史可得时间缺独立证据；小时DEX试验被阻塞。不能从API支持小时、因子时间戳或压缩包按日命名，推断已有完整小时行情。日线也不是盘口事件。下一轮BTC/ETH现货4小时/1小时筛查，应先验证不可变的因果OHLCV覆盖、缺口、价格/计价身份、执行延迟和成本敏感性。没有对应数据和账本前，不引入永续资金费率或做市假设。更细采样不会按比例增加独立观察。
 
 参见[研究页面](https://runchengxie.github.io/global-market-research/zh-CN/research/lstm-moe/)及[已训练模型诊断](sequence-diagnostics.zh-CN.md)。
+
+[已完成的BTC/ETH小时筛查与单独观察记录](crypto-evidence.zh-CN.md)现提供完整小时覆盖、24次固定线性拟合及明确因子可得局限。加密货币MoE尚未训练。

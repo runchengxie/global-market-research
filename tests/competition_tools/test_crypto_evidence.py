@@ -571,3 +571,33 @@ def test_failed_start_budget_debit_preserves_existing_forecasts(observer):
         and len(history[0][1]["committed_forecasts"]) == 4
     )
     assert digest(fresh / "protocol.json") == before and digest(receipt) == receipt_hash
+
+
+def test_bounded_watch_process_completes_with_no_system_scheduler(observer, tmp_path):
+    import json
+    from competition_tools.evaluation.crypto_watch import run_watch
+    from competition_tools.crypto_evidence import read_json, verify_seal
+
+    module, protocol, clock, transport = observer
+    config = read_json(protocol / "protocol.json")
+    config["budget"].update(captures=2, http_attempts=4)
+    (protocol / "seal.json").unlink()
+    (protocol / "protocol.json").write_text(json.dumps(config))
+    seal(protocol)
+
+    def sleep(seconds):
+        clock["now"] += timedelta(seconds=seconds)
+
+    result = run_watch(
+        protocol,
+        protocol.parent / "data",
+        protocol.parent / "study",
+        tmp_path / "watch",
+        clock=lambda: clock["now"],
+        sleep=sleep,
+        transport=transport,
+    )
+    assert result["status"] == "stopped" and result["reason"] == "protocol_budget"
+    assert transport.calls == 4
+    assert not protocol.with_name(protocol.name + ".captures.watch-lock").exists()
+    verify_seal(tmp_path / "watch")

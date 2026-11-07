@@ -20,7 +20,7 @@ The output must be new, external to source and separate from inputs. The diagnos
 
 A 30-minute processing budget produces an explicitly partial result if exhausted. SIGTERM and keyboard interruption preserve completed records when received inside the diagnostic processing stage. Setup failures can occur before a bundle exists. An interrupted current case can leave account files without a completed record; only summary records count as complete. Inference is checked at operation boundaries, so a single operation can finish after the deadline; it cannot then mark the run completed.
 
-Open `browser.html` directly from disk. It contains the data, scripts, English and Chinese catalogs, SVG curves, numeric tables, and a useful no-JavaScript table. It makes no network requests and starts no server. Filter by model, fold, seed, fee and control; use the file chooser to open another diagnostic `summary.json` (maximum 50 MiB). Keep real reports private; public Pages continues to show synthetic examples only.
+Open `browser.html` directly from disk. It contains the data, scripts, English and Chinese catalogs, SVG curves, numeric tables, and a useful no-JavaScript table. It makes no network requests and starts no server. Filter by model, fold, seed, fee and control; use the file chooser to open another diagnostic `summary.json` (maximum 50 MiB). Public Pages may display verified measured aggregates, comparisons and uncertainty with their sample scope, source revisions and limitations. Keep raw individual predictions, account records and private configuration outside the site. The synthetic example remains separately labeled.
 
 ## Interpret the comparisons
 

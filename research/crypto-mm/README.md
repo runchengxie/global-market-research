@@ -4,6 +4,8 @@
 
 An offline event-driven simulator for visible order-book queues, public trades and funding signals. B0 uses inventory-skewed quotes, B1 adds imbalance, B2 adjusts spreads using volatility, and B3 adds a funding-aware inventory target. See [assumptions](docs/assumptions.md) before interpreting results.
 
+[Verified BTC/ETH1h/4h research](../../docs/research/crypto-evidence.md) adds a bounded price/AIVIX Ridge screen and frozen pre-outcome forecasts. It uses optional locked `predictive` dependencies and remains separate from event-driven market making.
+
 ## Quick start
 
 [Weekly daily-price research](../../docs/research/incremental-research.md) compares less frequent trend trading with calendar and exposure controls. It is separate from the maker-event simulator and requires a one-time reservation for real historical runs.

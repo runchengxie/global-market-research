@@ -104,7 +104,7 @@
     "diagnostics": "Probability, exposure and threshold diagnosis",
     "targets": "Target/loss/policy scheme screen",
     "transformer": "Transformer, routing and feature extensions",
-    "crypto": "Crypto price and sentiment transfer"
+    "crypto": "Crypto MoE transfer, after the linear screen"
   },
   "explorationNotes": {
     "primary": "Logistic regression, single and matched LSTMs, equal experts, ensembles, dense and sparse routing on one sample contract.",
@@ -112,7 +112,7 @@
     "diagnostics": "Reconstruct scores; inspect flat cases, fitted priors, calibration, router loads and causal risk controls.",
     "targets": "Compare classification and return regression with frozen budgets, proper scores and an explicit continuation rule.",
     "transformer": "Plans exist; this follow-up has not trained Transformer variants, SOM or KMeans comparisons.",
-    "crypto": "Check actual grain, price/sentiment coverage and availability before a separate BTC/ETH spot 4h/1h screen. No such MoE result is claimed yet."
+    "crypto": "The separate BTC/ETH1h/4h linear screen below completed24 fits. Crypto MoE transfer remains untrained; linear results are not MoE results."
   },
   "gateTitle": "When is more MoE capacity worth trying?",
   "gateIntro": "Sparse fixed-rule performance must beat the linear, matched and equal controls at 5 bps with positive lower paired intervals, retain positive mean differences at 20 bps and win at least five of seven folds against each model. Prediction-loss improvement and a validation-exposure control must also pass.",
@@ -126,8 +126,8 @@
   "limitsTitle": "What remains unverified",
   "limits": "The six evidence gaps cover point-in-time membership, historical security identity, corporate actions, historical availability, owner/source-use provenance and holdout governance. Hash verification proves retained bytes, not the historical truth of these claims. Costs do not include dividends, financing or leverage.",
   "forward": "The modeled preparation window is 2026-11-09 through 2027-02-05: 61 signal sessions, followed by the two required opens. Preparation is frozen but blocked; it is not a registered holdout, accepted research or a collection schedule.",
-  "cryptoTitle": "Why look at crypto next?",
-  "crypto": "Crypto-oriented data services may offer useful price, social and sentiment features at finer intervals. Actual retained coverage must be checked separately: the inspected complete price study and BTC/ETH AIVIX factor snapshot are daily; the hourly DEX pilot is blocked. Service capability is not yet a ready hourly training panel.",
+  "cryptoTitle": "Crypto data and the next evidence question",
+  "crypto": "A separate verified BTC/ETH hourly snapshot is now complete, with4h bars derived from contiguous hours. The older eight-product study and retained AIVIX factors remain daily, while the DEX hourly pilot remains blocked. These inputs describe different coverage and are not interchangeable.",
   "sentiment": "A future screen should compare price only, price plus causally available sentiment, and delayed/placebo controls. Record publication/retrieval time, revision behavior and missingness. A daily sentiment value must not be copied backward into earlier hourly decisions. Spot price studies and event-book maker simulations remain separate.",
   "provenanceTitle": "Sources, scope and reproduction",
   "provenance": "Only intentionally published aggregates appear here; raw prices, individual predictions and private artifact paths are not distributed. Detailed protocols and commands remain in the source repository.",

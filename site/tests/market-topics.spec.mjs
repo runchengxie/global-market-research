@@ -9,7 +9,7 @@ for (const locale of ['en','zh-CN']) {
     await expect(page.locator('[data-site-nav=markets]')).toHaveAttribute('href', `${prefix}markets/`);
     await page.locator('[data-home-market=hk]').click();
     await expect(page).toHaveURL(`${prefix}markets/#market-hk`);
-    await expect(page.locator('[data-research-kind] .kind')).toHaveCount(10);
+    await expect(page.locator('[data-research-kind] .kind')).toHaveCount(11);
     for (const market of ['us','hk','crypto']) {
       const topic = page.locator(`[data-topic-market=${market}]`);
       await expect(topic).toBeVisible();
@@ -18,6 +18,7 @@ for (const locale of ['en','zh-CN']) {
     }
     await expect(page.locator('[data-topic-market=hk] a[href$="research/cnn-chart/"]')).toHaveCount(2);
     await expect(page.locator('[data-site-nav=strategies],[data-site-nav=factors]')).toHaveCount(0);
+    await expect(page.locator('[data-crypto-evidence-link]')).toHaveAttribute('href', `${prefix}research/crypto-evidence/`);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`${locale}-market-mobile.png`),fullPage:true});
     await page.setViewportSize({width:1440,height:1000});
@@ -35,7 +36,7 @@ for (const locale of ['en', 'zh-CN']) {
     const filter = page.locator('[data-research-filter]');
     await expect(filter).toBeVisible();
     await filter.selectOption('factor');
-    await expect(page.locator('[data-research-kind="factor"]')).toHaveCount(3);
+    await expect(page.locator('[data-research-kind="factor"]')).toHaveCount(4);
     await expect(page.locator('[data-research-kind="factor"]').first()).toBeVisible();
     await expect(page.locator('[data-research-kind="strategy"]').first()).toBeHidden();
     await filter.selectOption('strategy');

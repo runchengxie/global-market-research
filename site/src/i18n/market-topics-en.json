@@ -58,5 +58,8 @@
   "statusPending": "Further tests needed",
   "statusHistorical": "Historical record, verification pending",
   "sequenceTitle": "LSTM and expert routing",
-  "sequenceBody": "Matched sequence-model comparisons with explicit timing and synthetic interactive previews."
+  "sequenceBody": "Matched sequence-model comparisons with explicit timing and synthetic interactive previews.",
+  "cryptoEvidenceTitle": "BTC/ETH price and AIVIX evidence",
+  "cryptoEvidenceBody": "24 fixed linear fits on verified1h/4h data; factor timing remains unverified and mean prediction skill did not improve.",
+  "cryptoEvidenceScope": "Historical screen plus separately recorded pre-outcome forecasts; no established forward performance."
 }

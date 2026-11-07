@@ -2,6 +2,7 @@
 import SiteLayout from '../layouts/SiteLayout.astro';
 import SiteNavigation from './SiteNavigation.astro';
 import SequenceEvidence from './SequenceEvidence.astro';
+import CryptoEvidence from './CryptoEvidence.astro';
 import fixture from '../data/sequence-synthetic.v1.json';
 import { validateSequenceSummary } from '../lib/sequence-summary.ts';
 import en from '../i18n/sequence-en.json';
@@ -19,6 +20,7 @@ const names=t.names as Record<string,string>;
   <header><p class="eyebrow">{t.stage}</p><h1>{t.title}</h1><p class="lead">{t.intro}</p></header>
   <p>{t.migration} <a href="https://github.com/runchengxie/moe-lstm">{t.old} ↗</a></p>
   <SequenceEvidence locale={locale} />
+  <CryptoEvidence locale={locale} />
   <h2>{(locale==='en'?researchEn:researchZh).syntheticHeading}</h2>
   <p class="notice" role="note">{t.notice}</p>
   <section aria-labelledby="sequence-chart"><h2 id="sequence-chart">{t.chart}</h2>

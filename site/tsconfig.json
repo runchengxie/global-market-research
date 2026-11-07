@@ -10,7 +10,16 @@
     "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true,
     "noEmit": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ]
   },
-  "include": ["src/lib/sequence-*.ts", "src/scripts/sequence-*.ts"]
+  "include": [
+    "src/lib/sequence-*.ts",
+    "src/scripts/sequence-*.ts",
+    "src/lib/crypto-*.ts",
+    "src/scripts/crypto-*.ts"
+  ]
 }

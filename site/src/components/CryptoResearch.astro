@@ -1,0 +1,13 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+import SiteNavigation from './SiteNavigation.astro';
+import CryptoEvidence from './CryptoEvidence.astro';
+import en from '../i18n/crypto-evidence-en.json';
+import zh from '../i18n/crypto-evidence-zh-CN.json';
+const locale=Astro.props.locale==='zh-CN'?'zh-CN':'en',t=locale==='en'?en:zh;
+---
+<SiteLayout locale={locale} localePath="research/crypto-evidence/" title={`${t.title} | QUANT / LAB`} description={t.intro}>
+ <SiteNavigation locale={locale} active="markets" />
+ <main class="crypto-research"><CryptoEvidence locale={locale} standalone /></main>
+</SiteLayout>
+<style>.crypto-research{max-width:1160px;margin:auto;padding:1rem 2rem 4rem;min-width:0}@media(max-width:650px){.crypto-research{padding:1rem 1.2rem 3rem}}</style>
