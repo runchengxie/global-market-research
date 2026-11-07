@@ -4,6 +4,7 @@ for (const locale of ['en','zh-CN']) {
  test(`${locale}: sequence synthetic chart and accessible table`,async({page})=>{
   await page.goto(`${prefix}research/lstm-moe/`);
   await expect(page.locator('[data-synthetic-table] tbody tr')).toHaveCount(12);
+  await expect(page.locator('[data-synthetic-controls]')).toBeVisible();
   await page.locator('[data-load]').click();
   await expect(page.locator('[data-plot] canvas')).toBeVisible();
   await page.locator('[data-model]').selectOption('sparse');
@@ -25,6 +26,7 @@ for (const locale of ['en','zh-CN']) {
   await page.addInitScript(()=>{window.ResizeObserver=class {observe(){} disconnect(){} unobserve(){}};});
   await page.setViewportSize({width:1360,height:1000});
   await page.goto(`/global-market-research/${locale==='en'?'':'zh-CN/'}research/lstm-moe/`);
+  await expect(page.locator('[data-synthetic-controls]')).toBeVisible();
   await page.locator('[data-load]').click();
   await expect(page.locator('[data-plot] canvas')).toBeVisible();
   await page.setViewportSize({width:390,height:844});

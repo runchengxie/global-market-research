@@ -24,7 +24,7 @@ const names=t.names as Record<string,string>;
   <h2>{(locale==='en'?researchEn:researchZh).syntheticHeading}</h2>
   <p class="notice" role="note">{t.notice}</p>
   <section aria-labelledby="sequence-chart"><h2 id="sequence-chart">{t.chart}</h2>
-   <div class="controls" hidden><label>{t.method}<select data-model><option value="all">{Object.values(names).join(' / ')}</option>{data.series.map(s=><option value={s.name}>{names[s.name]}</option>)}</select></label>
+   <div class="controls" data-synthetic-controls hidden><label>{t.method}<select data-model><option value="all">{Object.values(names).join(' / ')}</option>{data.series.map(s=><option value={s.name}>{names[s.name]}</option>)}</select></label>
     <label>{t.fold}<select><option>1</option></select></label><label>{t.seed}<select><option>11</option></select></label>
    </div>
    <button data-load hidden>{t.load}</button><p data-error hidden>{t.failed}</p>
@@ -42,7 +42,7 @@ const names=t.names as Record<string,string>;
  const plot=root?.querySelector('[data-plot]') as HTMLElement;
  const payload=JSON.parse(root?.querySelector('[data-fixture]')?.textContent||'{}');
  button.hidden=false;
- (root?.querySelector(".controls") as HTMLElement).hidden=false;
+ (root?.querySelector("[data-synthetic-controls]") as HTMLElement).hidden=false;
  let chart:any;
  function update(){if(chart)chart.setOption({series:payload.data.series.map((s:any)=>({name:payload.names[s.name],type:'line',showSymbol:false,data:select.value==='all'||select.value===s.name?s.values:[]}))});}
  button?.addEventListener('click',async()=>{
