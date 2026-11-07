@@ -29,3 +29,5 @@ The rules summary and dated validation reports record what was checked at the ti
 - [BTC/ETH intraday factor screen, pre-outcome commitments and research health](research/crypto-evidence.md)
 
 - [Crypto follow-up: audited forward records and matched LSTM/MoE comparison](research/crypto-followup.md)
+
+- [MoE/LSTM interactive architecture guide](research/moe-architecture.md)

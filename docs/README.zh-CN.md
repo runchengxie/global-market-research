@@ -30,3 +30,5 @@
 - [BTC/ETH小时因子筛查、预先预测与运行状态](research/crypto-evidence.zh-CN.md)
 
 - [加密后续探索：前瞻验收与参数接近的LSTM/MoE对照](research/crypto-followup.zh-CN.md)
+
+- [MoE/LSTM 动态架构讲解](research/moe-architecture.zh-CN.md)

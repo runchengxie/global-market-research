@@ -1,0 +1,8 @@
+---
+import en from '../i18n/moe-story-en.json';
+import zh from '../i18n/moe-story-zh-CN.json';
+const locale=Astro.props.locale==='zh-CN'?'zh-CN':'en',t=locale==='en'?en:zh;
+const prefix=`/global-market-research/${locale==='en'?'':'zh-CN/'}`;
+---
+<aside class="architecture-entry"><p>{t.related}</p><a data-architecture-link href={`${prefix}research/moe-architecture/`}>{t.relatedLink} <span aria-hidden="true">→</span></a><p class="entry-note">{t.relatedNote}</p></aside>
+<style>.architecture-entry{margin:1.5rem 0;padding:1rem 1.2rem;border:1px solid var(--line);border-left:3px solid var(--green);border-radius:8px;background:var(--surface)}.architecture-entry p{margin:.2rem 0;font-size:.85rem;line-height:1.7}.architecture-entry a{display:inline-block;margin:.35rem 0;font-size:1.05rem;font-weight:600;color:var(--green);text-underline-offset:4px}.entry-note{max-width:75ch}</style>

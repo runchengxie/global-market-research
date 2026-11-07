@@ -1,0 +1,116 @@
+{
+  "title": "One history. Three notebooks.",
+  "subtitle": "MoE + LSTM, one step at a time",
+  "intro": "Imagine three readers studying the same short history. Each makes a set of notes. A small router sets how much of each set to use, and a shared output layer turns the combined notes into one score. Follow the moving input to see what each part does.",
+  "notice": "Interactive teaching example. Inputs, gate values, notes and scores are handcrafted; none are market data, measured expert behavior or investment predictions.",
+  "related": "Architecture in plain language",
+  "relatedLink": "Watch how MoE and LSTM work",
+  "relatedNote": "A separate interactive explanation; the evidence and results on this research page stay here.",
+  "play": "Play",
+  "pause": "Pause",
+  "previous": "Previous",
+  "next": "Next",
+  "restart": "Start over",
+  "modeLabel": "How are the notes combined?",
+  "modes": {
+    "dense": "Learned dense mixture",
+    "equal": "Fixed equal mixture",
+    "sparse": "Sparse top-2 dispatch"
+  },
+  "scenarioLabel": "Try a different toy history",
+  "scenarios": [
+    "Example A",
+    "Example B",
+    "Example C"
+  ],
+  "stepCounter": "Step {current} of {total}",
+  "motionNote": "Reduced-motion preference is on. Use the step buttons; automatic motion stays off.",
+  "manualNote": "Play once, pause whenever you like, or choose any numbered step.",
+  "diagramLabel": "A historical window feeds the router and three LSTM experts. Their weighted representations feed a shared output head.",
+  "window": "The same history goes to every selected reader",
+  "windowNote": "Five cards stand in for a full feature window. The small percentages are invented inputs.",
+  "timeLabel": "Step {day}",
+  "router": "Router",
+  "fixedRouter": "Fixed allocation",
+  "routerNote": "Looks only at the last row of features, then sets the weights.",
+  "equalNote": "One third each, fixed in advance. There is no learned allocation here.",
+  "expert": "Expert {letter}",
+  "expertNote": "Same LSTM structure, separately learned parameters.",
+  "reading": "Reading step {day} / 5",
+  "waiting": "Ready to read",
+  "complete": "Window processed",
+  "skipped": "Skipped for this window",
+  "weight": "Mixing weight",
+  "lensButton": "Look inside expert {letter}",
+  "notes": "Hidden notes",
+  "notesNote": "Two coordinates sketch a much larger flattened sequence representation.",
+  "mix": "Combine the notes",
+  "mixNote": "Collect every step’s representations, flatten them, then take a weighted sum across experts.",
+  "head": "One shared output layer",
+  "headNote": "The real task interprets its output as a classification probability or a return estimate. This toy shows only a raw illustrative score.",
+  "toyScore": "Illustrative raw score",
+  "lensTitle": "Zoom into one reader’s LSTM",
+  "lensNote": "The notebook is an analogy. A real LSTM carries cell and hidden-state vectors. This small scalar gate demo is separate from the compressed note coordinates above. Gate values are learned during training; they need not have a clear economic meaning.",
+  "keep": "Keep some old memory",
+  "write": "Add some new information",
+  "readout": "Let some information through",
+  "keepNote": "Forget gate: a continuous knob, not a yes/no switch.",
+  "writeNote": "Input gate scales new candidate information.",
+  "readoutNote": "Output gate controls the hidden representation; it does not erase cell memory.",
+  "oldMemory": "Previous cell memory",
+  "newMemory": "Updated cell memory",
+  "representation": "This step’s hidden representation",
+  "memoryStart": "Choose a reading step to inspect the memory update.",
+  "formula": "cell = forget × previous cell + input × candidate; hidden = output × tanh(cell)",
+  "whyTitle": "What the switches really change",
+  "whyDense": "Dense: all three experts process this window. The router changes the weight of their notes, not the amount of expert computation.",
+  "whyEqual": "Equal: all three still process the window. Their representations receive the same fixed weight.",
+  "whySparse": "Sparse top-2: route first, then let only the selected two process the window. Renormalize their selected weights. The third expert is skipped.",
+  "whyNote": "Different random starts can lead to different notes, but the architecture does not prove useful specialization. We do not label these experts as bull, bear or reversal specialists. Fewer active experts also do not guarantee lower measured latency.",
+  "technicalTitle": "Connect the picture to the actual code",
+  "technical": "The stock baseline uses a 20-row window, 64 hidden units per expert and a flattened full-sequence representation. The newer crypto comparison uses 12 four-hour bars and 8 units. The five cards and two note coordinates here are drawings, not changes to either model. The router in these examples reads the last feature row; the LSTMs read the full window.",
+  "staticTitle": "The whole process, without animation",
+  "staticSteps": [
+    "Put the past feature rows in time order.",
+    "Use the final row to set expert weights, or assign fixed equal weights.",
+    "For sparse dispatch, send the window only to selected experts; dense and equal send it to all three.",
+    "Each selected LSTM reads the window in order, updating cell memory and hidden representations.",
+    "Flatten the sequence representations and take their weighted sum.",
+    "Apply one shared output layer. The training objective determines how to interpret the score."
+  ],
+  "researchTitle": "See what the research actually found",
+  "stockLink": "U.S. equities: LSTM and MoE evidence",
+  "cryptoLink": "Crypto: matched small-model and gate comparison",
+  "cnnLink": "Related architecture: the crypto CNN study",
+  "cnnNote": "The CNN study has its own architecture and results; this explainer does not reclassify it as an MoE.",
+  "nojs": "This is the complete static overview. The text sequence below explains every stage without scripts.",
+  "back": "Back to research topics",
+  "captions": {
+    "input": {
+      "title": "Start with one short history",
+      "body": "Each card represents a feature row. Selected experts receive the same window; we have not handed them different markets or different dates."
+    },
+    "route": {
+      "title": "Set how much of each notebook to use",
+      "body": "In learned modes the router reads the last row. Switching the toy history can change its weights. Equal mode fixes the shares at one third."
+    },
+    "dispatch": {
+      "title": "Now decide who actually reads",
+      "body": "Dense and equal call all three LSTMs. Sparse top-2 sends this window only to the chosen two; a zero weight alone would not save computation if every expert still ran."
+    },
+    "read": {
+      "title": "Read step {day}, with a little memory",
+      "body": "Inside each selected LSTM, gates keep some old information, add a candidate update and produce this step’s representation. Click an active expert to inspect its small memory demo."
+    },
+    "mix": {
+      "title": "Combine notes, not independent forecasts",
+      "body": "The experts have produced hidden representations. We flatten the full sequences and mix matching coordinates with the displayed weights. The weights are not three calibrated confidence scores."
+    },
+    "output": {
+      "title": "Turn one combined representation into one score",
+      "body": "A shared output layer finishes the calculation. A lively diagram explains the mechanism; it does not establish that the model predicts markets well."
+    }
+  },
+  "changeLabel": "Illustrative change",
+  "lensSteps": "Inspect a reading step"
+}
