@@ -12,6 +12,7 @@ from competition_tools.datasets.daily_storage import safe_path
 from .flex_client import load_config, fetch_report, http_get, FlexError, secret_echo
 from .flex_reports import discover_report, inspect_report
 from .flex_ledger import summarize_ledger
+from .flex_reconciliation import reconcile_snapshot
 
 
 def _write(out, name, value):
@@ -93,9 +94,16 @@ def collect(
                 account_ref=config.account_ref,
             )
             ledger = summarize_ledger(raw, expected_account=config.expected_account)
+            snapshot = reconcile_snapshot(
+                raw,
+                expected_account=config.expected_account,
+                base_currency=config.base_currency,
+                account_ref=config.account_ref,
+            )
             _write(out, "report.xml", raw)
             _write(out, "observation.json", observation)
             _write(out, "ledger.json", ledger)
+            _write(out, "snapshot.json", snapshot)
             receipt.update(
                 status="collected",
                 report_sha256=hashlib.sha256(raw).hexdigest(),
