@@ -315,7 +315,7 @@ def test_conflicting_cash_or_execution_ids_fail_closed():
 
     raw = REPORT.replace(
         b"<Trades/>",
-        b'<Trades><Trade accountId="DU0000000" levelOfDetail="EXECUTION" tradeID="1"/><Trade accountId="DU0000000" levelOfDetail="EXECUTION" tradeID="1" quantity="999"/></Trades>',
+        b'<Trades><Trade accountId="DU0000000" levelOfDetail="EXECUTION" tradeID="1" tradeDate="20261106"/><Trade accountId="DU0000000" levelOfDetail="EXECUTION" tradeID="1" tradeDate="20261106" quantity="999"/></Trades>',
     )
     with pytest.raises(FlexError, match="CONFLICTING_TRADE_ID"):
         summarize_ledger(raw, expected_account=ACCOUNT)
@@ -332,3 +332,40 @@ def test_missing_open_positions_does_not_mean_zero_holdings():
     )
     assert "MISSING_SECTION:OpenPositions" in result["issues"]
     assert result["official_daily_facts_complete"] is False
+
+
+def test_ledger_separates_contracts_and_rejects_outside_trade_dates():
+    from competition_tools.competition_review.flex_ledger import summarize_ledger
+    from competition_tools.competition_review.flex_client import FlexError
+
+    trades = b'<Trades><Trade accountId="DU0000000" levelOfDetail="EXECUTION" tradeID="1" ibOrderID="1" tradeDate="20261106" conid="100" symbol="SYNTH" assetCategory="FUT" currency="USD" buySell="BUY" quantity="10" transactionType="ExchTrade"/><Trade accountId="DU0000000" levelOfDetail="EXECUTION" tradeID="2" ibOrderID="2" tradeDate="20261106" conid="200" symbol="SYNTH" assetCategory="FUT" currency="USD" buySell="SELL" quantity="-10" transactionType="ExchTrade"/></Trades>'
+    raw = REPORT.replace(b"<Trades/>", trades)
+    result = summarize_ledger(raw, expected_account=ACCOUNT)
+    assert len(result["executions"]["groups"]) == 2
+    assert {r["conid"] for r in result["executions"]["groups"]} == {"100", "200"}
+    with pytest.raises(FlexError, match="DATE_OUTSIDE_REPORT"):
+        summarize_ledger(
+            raw.replace(b'tradeDate="20261106"', b'tradeDate="20200101"'),
+            expected_account=ACCOUNT,
+        )
+
+
+def test_xml_encoded_secret_echo_is_not_saved():
+    from competition_tools.competition_review.flex_client import (
+        Credentials,
+        fetch_report,
+        FlexError,
+    )
+
+    encoded = "".join("&#" + str(ord(c)) + ";" for c in TOKEN).encode()
+    raw = REPORT.replace(
+        b'<FlexQueryResponse type="AF">',
+        b'<FlexQueryResponse type="AF" queryName="' + encoded + b'">',
+    )
+    responses = iter([SUCCESS, raw])
+    with pytest.raises(FlexError, match="SECRET_ECHO"):
+        fetch_report(
+            Credentials(TOKEN, QUERY, ACCOUNT, "paper", "USD"),
+            transport=lambda e, p: next(responses),
+            sleep=lambda n: None,
+        )

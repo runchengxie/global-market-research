@@ -60,6 +60,8 @@ def summarize_ledger(raw, *, expected_account):
                     raise FlexError("FLEX_CONFLICTING_TRADE_ID")
                 duplicate_executions += 1
                 continue
+            if not first <= report_date(row.get("tradeDate")) <= last:
+                raise FlexError("FLEX_EXECUTION_DATE_OUTSIDE_REPORT")
             executions[key] = attrs
         for row in statement.findall("./CashTransactions/CashTransaction"):
             if row.get("accountId") != expected_account:
@@ -99,13 +101,23 @@ def summarize_ledger(raw, *, expected_account):
         ):
             raise FlexError("FLEX_EXECUTION_SIDE_MISMATCH")
         day = report_date(row.get("tradeDate"))
-        group_key = (row.get("symbol"), row.get("assetCategory"), row.get("currency"))
+        conid = row.get("conid")
+        if conid in [None, "", "0", "-"]:
+            issues.append("EXECUTION_CONTRACT_ID_MISSING")
+            conid = None
+        group_key = (
+            conid or "missing:" + row["tradeID"],
+            row.get("symbol"),
+            row.get("assetCategory"),
+            row.get("currency"),
+        )
         group = groups.setdefault(
             group_key,
             dict(
-                symbol=group_key[0],
-                asset_class=group_key[1],
-                currency=group_key[2],
+                conid=conid,
+                symbol=group_key[1],
+                asset_class=group_key[2],
+                currency=group_key[3],
                 execution_count=0,
                 signed_execution_quantity=Decimal(0),
                 trade_dates=set(),

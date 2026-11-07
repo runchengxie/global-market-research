@@ -103,6 +103,17 @@ def parse_xml(raw):
     return root
 
 
+def secret_echo(raw, token, root=None):
+    if token.encode() in raw:
+        return True
+    root = parse_xml(raw) if root is None else root
+    return any(
+        token in (value or "")
+        for element in root.iter()
+        for value in [element.text, element.tail, *element.attrib.values()]
+    )
+
+
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise FlexError("FLEX_REDIRECT_REJECTED")
@@ -172,7 +183,7 @@ def fetch_report(
         )
         root = parse_xml(raw)
         if root.tag == "FlexQueryResponse":
-            if config.token.encode() in raw:
+            if secret_echo(raw, config.token, root):
                 raise FlexError("FLEX_SECRET_ECHO_REJECTED")
             return raw
         code = _service_code(root)

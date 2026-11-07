@@ -9,7 +9,7 @@ from pathlib import Path
 import time
 from competition_tools.crypto_evidence import new_output, seal
 from competition_tools.datasets.daily_storage import safe_path
-from .flex_client import load_config, fetch_report, http_get, FlexError
+from .flex_client import load_config, fetch_report, http_get, FlexError, secret_echo
 from .flex_reports import discover_report, inspect_report
 from .flex_ledger import summarize_ledger
 
@@ -74,7 +74,7 @@ def collect(
             raw = fetch_report(
                 config, start=start, end=end, transport=transport, sleep=sleep
             )
-        if config.token.encode() in raw:
+        if secret_echo(raw, config.token):
             raise FlexError("FLEX_SECRET_ECHO_REJECTED")
         if discover:
             observation = discover_report(raw)
@@ -130,9 +130,8 @@ def main():
                 json.dumps(
                     dict(
                         status="credentials_ready",
-                        account_binding_complete=bool(
-                            config.expected_account and config.base_currency
-                        ),
+                        expected_account_configured=bool(config.expected_account),
+                        base_currency_configured=bool(config.base_currency),
                     )
                 )
             )
