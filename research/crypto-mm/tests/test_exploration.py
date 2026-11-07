@@ -1,6 +1,7 @@
 import pytest
 
 np = pytest.importorskip("numpy")
+pytest.importorskip("sklearn")
 from crypto_mm.exploration.diagnostics import distribution  # noqa: E402
 
 
