@@ -1,6 +1,7 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
 import SiteNavigation from './SiteNavigation.astro';
+import ArchitectureLink from './ArchitectureLink.astro';
 import en from '../i18n/market-topics-en.json';
 import zh from '../i18n/market-topics-zh-CN.json';
 const locale = Astro.props.locale === 'zh-CN' ? 'zh-CN' : 'en';
@@ -11,6 +12,7 @@ const prefix = `/global-market-research/${locale === 'en' ? '' : 'zh-CN/'}`;
  <SiteNavigation locale={locale} active="markets" />
  <main class="topics">
   <header><p class="eyebrow">QUANT / LAB</p><h1>{t.title}</h1><p>{t.intro}</p><p>{t.note}</p></header>
+  <ArchitectureLink locale={locale} />
   <nav class="market-index" aria-label={t.navigation}>{t.markets.map((market,index)=><a href={`#market-${market.id}`}><span>0{index+1}</span>{market.name}</a>)}</nav>
   <div class="research-filter" data-filter-controls hidden><label for="research-filter">{t.indexes}</label><select id="research-filter" data-research-filter><option value="all">{t.allResearch}</option><option value="factor">{t.factor}</option><option value="strategy">{t.strategy}</option></select></div>
   {t.markets.map((market,index)=><section id={`market-${market.id}`} class="market-section" data-topic-market={market.id}>

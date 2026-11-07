@@ -25,6 +25,11 @@ for (const locale of ['en','zh-CN']) {
     await page.screenshot({path:info.outputPath(`${locale}-market-desktop.png`),fullPage:true});
     await expect(page.locator('.language a').first()).toHaveAttribute('href', '/global-market-research/markets/');
     await expect(page.locator('.language a').nth(1)).toHaveAttribute('href', '/global-market-research/zh-CN/markets/');
+    const architecture=page.locator('[data-architecture-link]');
+    await expect(architecture).toHaveAttribute('href', `${prefix}research/moe-architecture/`);
+    await architecture.click();
+    await expect(page).toHaveURL(`${prefix}research/moe-architecture/`);
+    await expect(page.locator('[data-moe-story]')).toBeVisible();
     await context.close();
   });
 }
@@ -35,14 +40,19 @@ for (const locale of ['en', 'zh-CN']) {
     await page.goto(`${prefix}markets/`);
     const filter = page.locator('[data-research-filter]');
     await expect(filter).toBeVisible();
+    const architecture=page.locator('[data-architecture-link]');
+    await expect(architecture).toHaveAttribute('href',`${prefix}research/moe-architecture/`);
     await filter.selectOption('factor');
+    await expect(architecture).toBeVisible();
     await expect(page.locator('[data-research-kind="factor"]')).toHaveCount(4);
     await expect(page.locator('[data-research-kind="factor"]').first()).toBeVisible();
     await expect(page.locator('[data-research-kind="strategy"]').first()).toBeHidden();
     await filter.selectOption('strategy');
+    await expect(architecture).toBeVisible();
     await expect(page.locator('[data-research-kind="factor"]').first()).toBeHidden();
     await expect(page.locator('[data-research-kind="strategy"]').first()).toBeVisible();
     await filter.selectOption('all');
+    await expect(architecture).toBeVisible();
     await expect(page.locator('[data-research-kind="factor"]').first()).toBeVisible();
     await expect(page.locator('[data-research-kind="strategy"]').first()).toBeVisible();
   });
