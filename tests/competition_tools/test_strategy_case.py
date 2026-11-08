@@ -247,7 +247,9 @@ def test_prospective_confirmation_and_staleness(case, mode):
     elif mode == "stale_account":
         policy["max_age_hours"] = 25
     else:
-        manifest["sources"]["scores"]["effective_at"] = "2026-10-01T00:00:00Z"
+        for role in ["pit", "universe", "model", "scores"]:
+            manifest["sources"][role]["effective_at"] = "2026-10-01T00:00:00Z"
+            manifest["sources"][role]["available_at"] = "2026-10-01T00:00:00Z"
     manifest["sources"]["policy"]["sha256"] = write(paths["policy"], policy)
     write(path, manifest)
     if mode in {"missing_confirmation_actor", "policy_after_target"}:
@@ -257,3 +259,39 @@ def test_prospective_confirmation_and_staleness(case, mode):
         result = build(path)
         assert result["daily_review"]["status"] == "blocked"
         assert result["comparison"] is None
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "model_after_score_effective",
+        "score_after_target_effective",
+        "policy_after_target_effective",
+    ],
+)
+def test_parents_must_be_available_before_child_effective_time(case, mode):
+    path, manifest, _ = case
+    if mode == "model_after_score_effective":
+        manifest["sources"]["model"]["available_at"] = "2026-11-07T12:00:00Z"
+        manifest["sources"]["scores"]["available_at"] = "2026-11-07T13:00:00Z"
+        manifest["sources"]["target"]["available_at"] = "2026-11-07T14:00:00Z"
+    elif mode == "score_after_target_effective":
+        manifest["sources"]["scores"]["available_at"] = "2026-11-07T13:00:00Z"
+        manifest["sources"]["target"]["available_at"] = "2026-11-07T14:00:00Z"
+    else:
+        manifest["sources"]["policy"]["available_at"] = "2026-11-07T12:00:00Z"
+    write(path, manifest)
+    with pytest.raises(ValueError, match="NONCAUSAL"):
+        build(path)
+
+
+def test_provided_empty_policy_is_invalid_not_missing_evidence(case, tmp_path):
+    from competition_tools.competition_review.strategy_cli import run
+
+    path, manifest, paths = case
+    manifest["sources"]["policy"]["sha256"] = write(paths["policy"], {})
+    write(path, manifest)
+    out = tmp_path / "invalid-empty-policy"
+    with pytest.raises(ValueError):
+        run(path, out, NOW)
+    assert not out.exists()

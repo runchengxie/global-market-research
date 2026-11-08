@@ -218,8 +218,15 @@ def _build_case(case_file, decision_time):
         if child in sources and all(k in sources for k in parents):
             if sources[child]["parents"] != {k: sources[k]["sha256"] for k in parents}:
                 raise ValueError("PARENT_BINDING_MISMATCH:" + child)
+            if any(
+                aware(sources[k]["available_at"])
+                > aware(sources[child]["effective_at"])
+                for k in parents
+            ):
+                raise ValueError("NONCAUSAL_PARENT_AVAILABILITY:" + child)
+
     policy = payloads.get("policy", {})
-    if policy:
+    if "policy" in payloads:
         effective, confirmed = (
             aware(policy["effective_at"]),
             aware(policy["confirmed_at"]),
@@ -238,6 +245,11 @@ def _build_case(case_file, decision_time):
             raise ValueError("POLICY_CONFIRMATION_ATTRIBUTION_REQUIRED")
         if "target" in sources and confirmed > aware(sources["target"]["effective_at"]):
             raise ValueError("POLICY_CONFIRMED_AFTER_TARGET")
+        if "target" in sources and aware(sources["policy"]["available_at"]) > aware(
+            sources["target"]["effective_at"]
+        ):
+            raise ValueError("NONCAUSAL_POLICY_AVAILABILITY")
+
         if (
             policy["declaration_sha256"] != declaration_hash
             or policy["account_ref"] != snapshot["account_ref"]
