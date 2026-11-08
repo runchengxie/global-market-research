@@ -66,3 +66,5 @@ python -m competition_tools.competition_review.shadow_cli evaluate \
 股票/MoE 的[目标研究](../research/sequence-target-study.zh-CN.md)也已定义分类与收益回归、线性/参数匹配/等权/稀疏对照、配对区块区间和继续条件。应复用其封存结果和未来准备门槛，而不是从比赛日记再启动一轮架构搜索。历史窗口已经暴露；新的未来区间需要独立冻结协议。这些是可继续检查的具体工作，不代表已经证明 MoE 或情绪能改善比赛收益。
 
 具体候选规则和首轮日期见[三组研究候选](research-candidates.zh-CN.md)。
+
+无需模型的研究检查点可使用独立的[候选观察记录](candidate-observations.zh-CN.md)，不降低申报策略证据门槛。

@@ -66,3 +66,5 @@ The existing [crypto follow-up](../research/crypto-followup.md) already contains
 For equities/MoE, the existing [objective study](../research/sequence-target-study.md) already defines classification-versus-return regression, matched/linear/equal/sparse controls, paired block intervals and a continuation rule. Reuse its sealed results and future-preparation gate rather than launching another architecture search from the competition diary. Its historical windows are exposed; a new future interval needs its own frozen protocol. These records establish concrete work to inspect, not a claim that MoE or sentiment improves competition returns.
 
 For explicit candidate rules and a first dated cycle, see [three research candidates](research-candidates.md).
+
+Model-free research checkpoints can use the separate [candidate observation recorder](candidate-observations.md); it does not weaken declared-strategy evidence gates.
