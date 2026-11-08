@@ -1,0 +1,17 @@
+# File-backed strategy case and allocation comparison
+
+Continue the private declaration-to-holdings investigation without fabricating a trained fundamental Ranker or authorizing trading. Existing daily review validates supplied references; this addition verifies their actual files and derives current weights from sealed Flex observations. User has requested autonomous continuation and opted out of repeated design confirmations.
+
+## Approach
+
+Use a small stdlib offline CLI in competition_review, composing the existing daily reviewer. Alternatives were to expand that pure reviewer into filesystem/broker code (rejected: preserve its interface) or start training a new Ranker (rejected: missing PIT and prospective policy evidence). This choice is the implementer's, not a claimed user selection. No network, new dependencies, research imports, executable targets or brokerage changes.
+
+A versioned case manifest names an existing declaration root, sealed Flex snapshot root and optional role records for policy, PIT, universe, model, scores and target. Records name external file paths, SHA256, effective_at and available_at. Scores bind PIT/universe/model parents; target binds scores. Missing roles remain explicit blockers. Provided invalid hashes, noncausal times, malformed payloads or inconsistent identities fail before creating output. Declaration receipts and full Flex seal are verified. Snapshot status must be reconciled_stock_cash, account/base currency must match receipt, and acquisition completion cannot exceed decision time. Account effective time conservatively uses UTC start of the report-date label for age checking, not an asserted exchange close.
+
+Policy uses the existing reviewer contract plus effective_at and confirmed_at. Require effective <= confirmed <= review time. Universe JSON contains unique symbols; scores JSON contains finite signed scores keyed by symbol; target JSON contains nonnegative long-only fractional weights keyed by symbol. Universe/score/target contents must agree, and required role bytes must match their manifest digest. This checks identity and attributed lineage, not PIT truth, model semantics, human confirmation authenticity or Ranker training. Policy and model files remain prospective evidence and never retroactively prove earlier orders.
+
+A complete file chain is passed to review_decision with current weights from Summary conids and target weights from the verified target file. Blocked reviews emit no comparison. Otherwise compare current holdings and supplied target using gross exposure, largest name, cash residual, two-way sum(abs(delta weight)) and a clearly labeled linear cost scenario using supplied nonnegative one-way basis points; initial static proportional-equity shocks are not backtests, forecasts or optimal allocation recommendations. Never invent target weights. Known stock/cash/accrual scope and all unverified official/platform status remain visible. Store fresh sealed bilingual private outputs, explicit missing-evidence checklist and reproduction provenance. No model performance inference or executable handoff.
+
+## Verification
+
+Exercise tampering, missing roles, future acquisition/policy, source timing and lineage, conid mismatch/duplicate, malformed/nonfinite weights/scores, unsupported snapshot, misleading partial evidence and blocked comparison. Synthetic complete chain proves exact known arithmetic; real files produce an honest blocked report if evidence is absent. Preserve prior reports and locked worktrees.
