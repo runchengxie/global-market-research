@@ -142,14 +142,14 @@ def _inputs(manifest_file):
     return m, data, issues
 
 
-def run(manifest_file, snapshot_root, output):
+def run(manifest_file, snapshot_root, output, *, daily_paths=False):
     try:
-        return _run(manifest_file, snapshot_root, output)
+        return _run(manifest_file, snapshot_root, output, daily_paths=daily_paths)
     except (KeyError, TypeError, DecimalException, OverflowError) as exc:
         raise ValueError("INVALID_ETF_REHEARSAL") from exc
 
 
-def _run(manifest_file, snapshot_root, output):
+def _run(manifest_file, snapshot_root, output, *, daily_paths=False):
     import exchange_calendars as xc
     from importlib.metadata import version
 
@@ -205,13 +205,21 @@ def _run(manifest_file, snapshot_root, output):
         endpoints = [dates[index + 1], dates[index + 21]]
         marks = []
         base_values = []
-        for day in endpoints:
-            if day not in core_rows:
-                raise ValueError("CORE_ENDPOINT_MISSING")
-            at = us_rows[day]["open"]
-            j = asof_mark(jp_marks, at)
-            sgd = asof_mark(fx["usdsgd"], at)
-            yen = asof_mark(fx["usdjpy"], at)
+        daily_blockers = []
+        mark_days = dates[index + 1 : index + 22] if daily_paths else endpoints
+        for day in mark_days:
+            try:
+                if day not in core_rows:
+                    raise ValueError("CORE_ENDPOINT_MISSING")
+                at = us_rows[day]["open"]
+                j = asof_mark(jp_marks, at)
+                sgd = asof_mark(fx["usdsgd"], at)
+                yen = asof_mark(fx["usdjpy"], at)
+            except ValueError as exc:
+                if not daily_paths or day in endpoints:
+                    raise
+                daily_blockers.append(dict(session_date=day, reason=str(exc)))
+                continue
             values = {
                 core: base_mark(
                     core_rows[day]["adjusted_open"], "USD", sgd["value"], yen["value"]
@@ -233,7 +241,7 @@ def _run(manifest_file, snapshot_root, output):
                     base_values={k: str(v) for k, v in values.items()},
                 )
             )
-        returns = {k: base_values[1][k] / base_values[0][k] - 1 for k in reference}
+        returns = {k: base_values[-1][k] / base_values[0][k] - 1 for k in reference}
         arms = {
             "observed_reference": reference,
             "fixed_half": {core: "0.5"},
@@ -273,6 +281,20 @@ def _run(manifest_file, snapshot_root, output):
                         **result,
                     )
                 )
+                if daily_paths and not daily_blockers:
+                    from .etf_paths import path_metrics
+
+                    cases[-1]["cash_scenarios"] = [
+                        path_metrics(reference, weights, marks, fee, rate)
+                        for rate in ["0", "0.02", "0.04"]
+                    ]
+                    if abs(
+                        Decimal(
+                            cases[-1]["cash_scenarios"][0]["return_after_initial_cost"]
+                        )
+                        - Decimal(result["target_return_after_initial_cost"])
+                    ) > Decimal("1e-24"):
+                        raise ValueError("DAILY_ENDPOINT_RECONSTRUCTION_FAILED")
         windows.append(
             dict(
                 cutoff=cutoff,
@@ -286,11 +308,25 @@ def _run(manifest_file, snapshot_root, output):
                 sma200=str(sum(prices[d] for d in days) / 200),
                 initial_trend_risk_on=signal,
                 asset_return_proxies={k: str(v) for k, v in returns.items()},
-                endpoint_marks=marks,
+                endpoint_marks=[marks[0], marks[-1]],
             )
         )
+        if daily_paths:
+            windows[-1]["daily_marks"] = marks
+            windows[-1]["daily_path_status"] = (
+                "blocked_missing_or_stale_mark"
+                if daily_blockers
+                else "complete_21_opening_marks"
+            )
+            windows[-1]["daily_path_blockers"] = daily_blockers
+            if daily_blockers:
+                for case in cases[-9:]:
+                    case["cash_scenarios"] = None
+                    case["daily_path_status"] = "blocked_missing_or_stale_mark"
     result = dict(
-        schema="competition.etf_rehearsal.v1",
+        schema="competition.etf_rehearsal.v2"
+        if daily_paths
+        else "competition.etf_rehearsal.v1",
         status="retrospective_diagnostic_completed",
         source_manifest_sha256=digest(manifest_file),
         snapshot_sha256=digest(Path(snapshot_root) / "snapshot.json"),
@@ -312,10 +348,26 @@ def _run(manifest_file, snapshot_root, output):
             "No daily NAV/drawdown or full accounting replay is inferred from one-interval arithmetic.",
         ],
     )
+    if daily_paths:
+        result["limitations"][-1] = (
+            "Daily opening-mark paths use constant adjusted units and modeled cash, not actual daily NAV, closing/intraday risk or an accepted cashflow ledger."
+        )
+        result["limitations"].append(
+            "Cash sensitivities 0/2/4% are simple ACT/365 assumptions on post-fee SGD residual, not observed rates; initial turnover is not daily or official turnover."
+        )
     text = "\n".join(
         f"{r['cutoff']} {r['candidate']} {r['one_way_cost_bps']}bp: {float(r['target_return_after_initial_cost']) * 100:.4f}%"
         for r in cases
     )
+    if daily_paths:
+        text += "\n\nV2 opening-mark path diagnostics (retrospective proxies; no intraday risk):\n"
+        for c in cases:
+            prefix = f"{c['cutoff']} {c['candidate']} {c['one_way_cost_bps']}bp"
+            if c["cash_scenarios"] is None:
+                text += prefix + ": BLOCKED; see window daily_path_blockers\n"
+                continue
+            for scenario in c["cash_scenarios"]:
+                text += f"{prefix} cash={scenario['cash_annual_rate']}: return={float(scenario['return_after_initial_cost']) * 100:.4f}%, opening-mark MDD={float(scenario['maximum_drawdown']) * 100:.4f}%, initial turnover={scenario['initial_stock_turnover']}\n"
     return _save(
         output,
         "rehearsal.json",
@@ -336,8 +388,13 @@ def main():
     p.add_argument("--manifest", required=True)
     p.add_argument("--snapshot", required=True)
     p.add_argument("--output", required=True)
+    p.add_argument(
+        "--daily-paths",
+        action="store_true",
+        help="Opt in to v2 daily opening marks and cash sensitivities",
+    )
     a = p.parse_args()
-    run(a.manifest, a.snapshot, a.output)
+    run(a.manifest, a.snapshot, a.output, daily_paths=a.daily_paths)
     print(
         "Private retrospective diagnostic saved; no research or execution acceptance."
     )

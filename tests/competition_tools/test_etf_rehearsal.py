@@ -261,6 +261,29 @@ def test_nonflat_rehearsal_funding_endpoint_reconstruction_and_tamper(tmp_path):
             assert all(
                 Decimal(v) <= 72 for v in mark["modeled_mark_age_hours"].values()
             )
+    daily = run(manifest, snapshot, tmp_path / "daily", daily_paths=True)
+    assert daily["schema"] == "competition.etf_rehearsal.v2"
+    complete = [w for w in daily["windows"] if not w["daily_path_blockers"]]
+    assert len(complete) == 1 and all(len(w["daily_marks"]) == 21 for w in complete)
+    july = next(w for w in daily["windows"] if w["cutoff"] == "2026-07-01")
+    assert july["daily_path_status"] == "blocked_missing_or_stale_mark"
+    assert any(
+        b["session_date"] == "2026-07-20" and b["reason"] == "STALE_MARK"
+        for b in july["daily_path_blockers"]
+    )
+    for c in daily["cases"]:
+        if c["cutoff"] != "2026-04-01":
+            assert c["cash_scenarios"] is None
+            continue
+        assert len(c["cash_scenarios"]) == 3
+        zero = c["cash_scenarios"][0]
+        assert abs(
+            Decimal(zero["return_after_initial_cost"])
+            - Decimal(c["target_return_after_initial_cost"])
+        ) < Decimal("1e-24")
+        assert len(zero["path"]) == 21
+    assert result["schema"] == "competition.etf_rehearsal.v1"
+    assert "cash_scenarios" not in result["cases"][0]
     with pytest.raises(FileExistsError):
         run(manifest, snapshot, out)
     (source / "usmv.json").write_text("{}")
