@@ -120,3 +120,39 @@ def test_cycle_cannot_start_before_contest_envelope():
             datetime(2026, 10, 23, 10, tzinfo=timezone.utc),
             datetime(2026, 10, 20, tzinfo=timezone.utc),
         )
+
+
+def test_explicit_core_currency_must_be_usd(case, tmp_path):
+    from test_strategy_case import RAW, write
+    from competition_tools.competition_review.flex_reconciliation import (
+        reconcile_snapshot,
+    )
+    from competition_tools.crypto_evidence import digest, read_json, seal
+
+    root = tmp_path / "snapshot"
+    raw = RAW.replace(
+        b'currency="USD" assetCategory="STK"', b'currency="EUR" assetCategory="STK"'
+    )
+    (root / "report.xml").write_bytes(raw)
+    write(
+        root / "snapshot.json",
+        reconcile_snapshot(
+            raw, expected_account="SYNTH", base_currency="USD", account_ref="paper"
+        ),
+    )
+    receipt = read_json(root / "receipt.json")
+    receipt["report_sha256"] = digest(root / "report.xml")
+    write(root / "receipt.json", receipt)
+    (root / "seal.json").unlink()
+    seal(root)
+    with pytest.raises(ValueError, match="USD"):
+        propose(root, tmp_path / "bad")
+    assert not (tmp_path / "bad").exists()
+
+
+def test_tampered_raw_report_rejected_before_output(case, tmp_path):
+    root = tmp_path / "snapshot"
+    (root / "report.xml").write_bytes(b"changed")
+    with pytest.raises(ValueError):
+        propose(root, tmp_path / "bad")
+    assert not (tmp_path / "bad").exists()
