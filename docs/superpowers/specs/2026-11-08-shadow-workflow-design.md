@@ -17,3 +17,5 @@ Extend competition_review using stdlib and existing strategy_case/seal helpers. 
 ## Verification and operations
 
 Use synthetic RED/GREEN tests for missing prospective parameters, immutable entries, future/tampered/blocked evaluation, account/currency/entry hash mismatch, exact paired arithmetic, missing return keys, nonfinite/negative invalid values; NAV arithmetic, unknown/nonzero fields, mixed modes, period/base/account conflicts, duplicate rows and ending snapshot mismatch. Run actual retained report privately, record actual blocked entry with current clock, and keep all versions externally. Full regression, independent whole-branch review, exact-version CI/integration/Pages and task-only cleanup apply.
+
+For a later evaluation, the case must supply `shadow_window: {start, end}` with aware times not earlier than recording. The entry freezes this window, the verified policy benchmark and the case one-way cost assumption. Outcome start/end, `benchmark` identifier and cost must exactly match. Missing registration permits a diary entry but blocks later evaluation; intervals and benchmarks cannot be selected after results.
