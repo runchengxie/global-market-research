@@ -226,6 +226,10 @@ def _run(manifest_file, snapshot_root, output):
                     japan_modeled_close=j["at"].isoformat(),
                     fx_sgd_daily_open=sgd["at"].isoformat(),
                     fx_jpy_daily_open=yen["at"].isoformat(),
+                    modeled_mark_age_hours={
+                        key: str(Decimal(str((at - row["at"]).total_seconds())) / 3600)
+                        for key, row in [("japan", j), ("usdsgd", sgd), ("usdjpy", yen)]
+                    },
                     base_values={k: str(v) for k, v in values.items()},
                 )
             )
@@ -241,15 +245,33 @@ def _run(manifest_file, snapshot_root, output):
                 result = interval_arithmetic(
                     reference, weights, returns, "0", benchmark, fee
                 )
-                if (
-                    1
-                    - sum((Decimal(v) for v in weights.values()), Decimal(0))
-                    - Decimal(result["initial_cost_fraction"])
-                    < 0
-                ):
+                residual = 1 - sum((Decimal(v) for v in weights.values()), Decimal(0))
+                cash_after_cost = residual - Decimal(result["initial_cost_fraction"])
+                if cash_after_cost < 0:
                     raise ValueError("INITIAL_COST_NOT_CASH_FUNDED")
+                endpoint_stock = sum(
+                    (Decimal(w) * (1 + returns[k]) for k, w in weights.items()),
+                    Decimal(0),
+                )
+                reconstructed = endpoint_stock + cash_after_cost
+                error = reconstructed - (
+                    1 + Decimal(result["target_return_after_initial_cost"])
+                )
+                if abs(error) > Decimal("1e-24"):
+                    raise ValueError("ENDPOINT_RECONSTRUCTION_FAILED")
                 cases.append(
-                    dict(cutoff=cutoff, candidate=name, one_way_cost_bps=fee, **result)
+                    dict(
+                        cutoff=cutoff,
+                        candidate=name,
+                        one_way_cost_bps=fee,
+                        initial_stock_weights=weights,
+                        initial_non_stock_weight=str(residual),
+                        initial_cash_after_cost=str(cash_after_cost),
+                        endpoint_stock_value=str(endpoint_stock),
+                        reconstructed_final_value=str(reconstructed),
+                        endpoint_reconstruction_residual=str(error),
+                        **result,
+                    )
                 )
         windows.append(
             dict(

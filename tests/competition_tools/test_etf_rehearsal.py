@@ -134,7 +134,7 @@ def test_sma_requires_exact_200_completed_sessions_and_strict_above():
         sma_signal(prices, days)
 
 
-def test_full_flat_rehearsal_fees_all_assets_and_tamper(tmp_path):
+def test_nonflat_rehearsal_funding_endpoint_reconstruction_and_tamper(tmp_path):
     import json
     import exchange_calendars as xc
     from test_strategy_case import RAW
@@ -168,7 +168,9 @@ def test_full_flat_rehearsal_fees_all_assets_and_tamper(tmp_path):
             symbol,
             currency,
             stamps,
-            [value] * len(stamps),
+            [value + i / 10 for i in range(len(stamps))]
+            if key == "usmv"
+            else [value] * len(stamps),
             [value] * len(stamps),
             [value] * len(stamps),
         )
@@ -244,7 +246,21 @@ def test_full_flat_rehearsal_fees_all_assets_and_tamper(tmp_path):
         for c in result["cases"]
         if c["candidate"] == "fixed_half" and c["one_way_cost_bps"] == "10"
     )
-    assert Decimal(fixed["target_return_after_initial_cost"]) == Decimal("-.0002")
+    entry_index = list(us.index.date).index(datetime(2026, 4, 2).date())
+    exit_index = list(us.index.date).index(datetime(2026, 5, 1).date())
+    entry_open = Decimal(str(100 + entry_index / 10))
+    exit_open = Decimal(str(100 + exit_index / 10))
+    independent_endpoint = Decimal(".5") * exit_open / entry_open + Decimal(".4998")
+    assert abs(
+        Decimal(fixed["target_return_after_initial_cost"]) - (independent_endpoint - 1)
+    ) < Decimal("1e-24")
+    assert fixed["initial_cash_after_cost"] == "0.4998"
+    assert abs(Decimal(fixed["endpoint_reconstruction_residual"])) < Decimal("1e-24")
+    for window in result["windows"]:
+        for mark in window["endpoint_marks"]:
+            assert all(
+                Decimal(v) <= 72 for v in mark["modeled_mark_age_hours"].values()
+            )
     with pytest.raises(FileExistsError):
         run(manifest, snapshot, out)
     (source / "usmv.json").write_text("{}")
