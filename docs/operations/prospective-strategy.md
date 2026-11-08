@@ -31,6 +31,7 @@ After an unblocked entry, supply an external JSON outcome with schema `competiti
 | `account_ref`, `base_currency` | Exact recorded alias and currency |
 | `start`, `end`, `available_at` | Aware times: recorded_at ≤ start < end ≤ available_at ≤ evaluation time |
 | `returns` | Exact union of recorded current/target conids, each a finite signed base-currency total-return fraction ≥ −1 |
+| `benchmark` | Exact benchmark identifier frozen in the recorded policy |
 | `non_stock_return`, `benchmark_return` | Attributed finite total-return fractions ≥ −1, same interval/currency |
 | `one_way_cost_bps` | Finite nonnegative initial linear stock trading-cost assumption, at most 10000 basis points |
 

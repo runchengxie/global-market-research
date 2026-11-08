@@ -31,6 +31,7 @@ python -m competition_tools.competition_review.shadow_cli nav \
 | `account_ref`、`base_currency` | 与原记录完全相同的账户代号、币种 |
 | `start`、`end`、`available_at` | 带时区，满足记录时间 ≤ 开始 < 结束 ≤ 可得 ≤ 评价时间 |
 | `returns` | 原当前/目标 conid 的精确并集；每项为同币种有限、有符号、不小于 −1 的总收益小数 |
+| `benchmark` | 与原策略记录冻结的基准标识完全相同 |
 | `non_stock_return`、`benchmark_return` | 同区间、同币种的所提供总收益小数，有限且不小于 −1 |
 | `one_way_cost_bps` | 有限、非负、不超过 10000 基点的初始单边线性股票交易费用假设 |
 
