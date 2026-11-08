@@ -149,6 +149,75 @@ def _return(value):
     return n
 
 
+def interval_arithmetic(
+    current_weights,
+    target_weights,
+    asset_returns,
+    non_stock_return,
+    benchmark_return,
+    cost_bps,
+):
+    """Plain one-interval arithmetic only; no source/decision or execution approval."""
+    try:
+        return _interval_arithmetic(
+            current_weights,
+            target_weights,
+            asset_returns,
+            non_stock_return,
+            benchmark_return,
+            cost_bps,
+        )
+    except (KeyError, TypeError, DecimalException, OverflowError) as exc:
+        raise ValueError("INVALID_INTERVAL_ARITHMETIC") from exc
+
+
+def _interval_arithmetic(
+    current_weights,
+    target_weights,
+    asset_returns,
+    non_stock_return,
+    benchmark_return,
+    cost_bps,
+):
+    current = {k: decimal(v) for k, v in current_weights.items()}
+    target = {k: decimal(v) for k, v in target_weights.items()}
+    if sum(current.values()) > 1 or sum(target.values()) > 1:
+        raise ValueError("ONLY_UNLEVERED_SLEEVES_SUPPORTED")
+    returns = {k: _return(v) for k, v in asset_returns.items()}
+    if set(returns) != current.keys() | target.keys():
+        raise ValueError("OUTCOME_RETURN_KEYS_MISMATCH")
+    non_stock = _return(non_stock_return)
+    benchmark = _return(benchmark_return)
+    bps = decimal(cost_bps)
+    if bps > 10000:
+        raise ValueError("INVALID_COST_BPS")
+
+    def weighted(weights):
+        return (
+            sum((v * returns[k] for k, v in weights.items()), Decimal(0))
+            + (1 - sum(weights.values())) * non_stock
+        )
+
+    turnover = sum(
+        (abs(target.get(k, 0) - current.get(k, 0)) for k in returns), Decimal(0)
+    )
+    cost = turnover * bps / 10000
+    maintain = weighted(current)
+    changed = weighted(target) - cost
+    if changed < -1:
+        raise ValueError("HYPOTHETICAL_EQUITY_BELOW_ZERO")
+    return dict(
+        maintain_return=str(maintain),
+        target_return_after_initial_cost=str(changed),
+        paired_difference=str(changed - maintain),
+        benchmark_return=str(benchmark),
+        maintain_excess_over_benchmark=str(maintain - benchmark),
+        target_excess_over_benchmark=str(changed - benchmark),
+        initial_two_way_stock_turnover=str(turnover),
+        initial_cost_fraction=str(cost),
+    )
+
+
 def evaluate(entry_root, outcome_file, output, *, now=None):
     try:
         return _evaluate(entry_root, outcome_file, output, _now(now))
@@ -204,33 +273,14 @@ def _evaluate(entry_root, outcome_file, output, now):
     target_path = safe_path(Path(target_ref["path"]))
     if digest(target_path) != target_ref["sha256"]:
         raise ValueError("RECORDED_TARGET_CHANGED")
-    current = {k: decimal(v) for k, v in review["current_weights"].items()}
-    target = {k: decimal(v) for k, v in read_json(target_path)["weights"].items()}
-    if sum(current.values()) > 1 or sum(target.values()) > 1:
-        raise ValueError("ONLY_UNLEVERED_SLEEVES_SUPPORTED")
-    returns = {k: _return(v) for k, v in o["returns"].items()}
-    if set(returns) != current.keys() | target.keys():
-        raise ValueError("OUTCOME_RETURN_KEYS_MISMATCH")
-    non_stock = _return(o["non_stock_return"])
-    benchmark = _return(o["benchmark_return"])
-    bps = decimal(o["one_way_cost_bps"])
-    if bps > 10000:
-        raise ValueError("INVALID_COST_BPS")
-
-    def weighted(weights):
-        return (
-            sum((v * returns[k] for k, v in weights.items()), Decimal(0))
-            + (1 - sum(weights.values())) * non_stock
-        )
-
-    turnover = sum(
-        (abs(target.get(k, 0) - current.get(k, 0)) for k in returns), Decimal(0)
+    comparison = interval_arithmetic(
+        review["current_weights"],
+        read_json(target_path)["weights"],
+        o["returns"],
+        o["non_stock_return"],
+        o["benchmark_return"],
+        o["one_way_cost_bps"],
     )
-    cost = turnover * bps / 10000
-    maintain = weighted(current)
-    changed = weighted(target) - cost
-    if changed < -1:
-        raise ValueError("HYPOTHETICAL_EQUITY_BELOW_ZERO")
     result = dict(
         schema="competition.shadow_comparison.v1",
         scope="hypothetical_one_interval_start_weights_not_broker_performance",
@@ -240,14 +290,7 @@ def _evaluate(entry_root, outcome_file, output, now):
         interval_start=o["start"],
         interval_end=o["end"],
         base_currency=review["base_currency"],
-        maintain_return=str(maintain),
-        target_return_after_initial_cost=str(changed),
-        paired_difference=str(changed - maintain),
-        benchmark_return=str(benchmark),
-        maintain_excess_over_benchmark=str(maintain - benchmark),
-        target_excess_over_benchmark=str(changed - benchmark),
-        initial_two_way_stock_turnover=str(turnover),
-        initial_cost_fraction=str(cost),
+        **comparison,
         statistical_superiority_established=False,
         execution_authorized=False,
         limitations=[
