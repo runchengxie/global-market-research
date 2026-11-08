@@ -3,6 +3,7 @@
 import argparse
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from competition_tools.crypto_evidence import read_json, digest, verify_seal
 from competition_tools.datasets.daily_storage import safe_path
@@ -64,7 +65,16 @@ def _price_diagnostic(path, proposal, session, close, deadline, now):
         or not start <= session < end
     ):
         raise ValueError("PRICE_REQUEST_RANGE_MISMATCH")
-    data, exclusions = parse_chart(read_json(path), symbol, "USD", start, end)
+    payload = read_json(path)
+    for raw_stamp in payload["chart"]["result"][0]["timestamp"]:
+        event = datetime.fromtimestamp(raw_stamp, timezone.utc)
+        if (
+            event > now
+            or event.astimezone(ZoneInfo("America/New_York")).date().isoformat()
+            > session
+        ):
+            raise ValueError("FUTURE_RAW_PRICE_SESSION")
+    data, exclusions = parse_chart(payload, symbol, "USD", start, end)
     if any(v["date"] > session for v in data):
         raise ValueError("FUTURE_PRICE_SESSION")
     day = date.fromisoformat(session)
@@ -104,6 +114,8 @@ def _price_diagnostic(path, proposal, session, close, deadline, now):
 def record(proposal_root, output, session_date, price_file=None, *, now=None):
     stamp = aware((now or datetime.now(timezone.utc)).isoformat())
     root, p, first = _proposal(proposal_root)
+    if aware(p["created_at"]) > stamp:
+        raise ValueError("FUTURE_PROPOSAL_CREATION")
     deadlines = {first: aware(p["schedule"]["initial_signal_deadline"])}
     deadlines.update(
         {
@@ -134,6 +146,7 @@ def record(proposal_root, output, session_date, price_file=None, *, now=None):
         except (
             ValueError,
             KeyError,
+            IndexError,
             TypeError,
             AttributeError,
             OSError,

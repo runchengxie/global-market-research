@@ -124,6 +124,8 @@ def test_valid_model_free_research_record_is_not_actual_strategy(
         "wrong_symbol",
         "partial_history",
         "future_row",
+        "future_row_outside_range",
+        "empty_quote",
         "intraday_stamp",
     ],
 )
@@ -151,6 +153,15 @@ def test_invalid_price_evidence_is_recorded_blocked(observation_inputs, tmp_path
             item["indicators"]["adjclose"][0]["adjclose"] = item["indicators"][
                 "adjclose"
             ][0]["adjclose"][1:]
+        elif mode == "empty_quote":
+            item["indicators"]["quote"] = []
+        elif mode == "future_row_outside_range":
+            item["timestamp"].append(
+                int(datetime(2026, 11, 10, 14, 30, tzinfo=timezone.utc).timestamp())
+            )
+            for key in ["open", "close"]:
+                item["indicators"]["quote"][0][key].append(102)
+            item["indicators"]["adjclose"][0]["adjclose"].append(102)
         elif mode == "future_row":
             item["timestamp"][-1] = int(
                 datetime(2026, 11, 10, 14, 30, tzinfo=timezone.utc).timestamp()
@@ -180,3 +191,15 @@ def test_tampered_proposal_or_unknown_checkpoint_creates_no_output(
     with pytest.raises(ValueError):
         record(observation_inputs, tmp_path / "bad", at(21, 10))
     assert not (tmp_path / "bad").exists()
+
+
+def test_future_proposal_creation_rejected(observation_inputs, tmp_path):
+    proposal, _ = observation_inputs
+    p = json.loads((proposal / "proposal.json").read_text())
+    p["created_at"] = "2026-11-09T21:20:00+00:00"
+    (proposal / "proposal.json").write_text(json.dumps(p))
+    (proposal / "seal.json").unlink()
+    seal(proposal)
+    with pytest.raises(ValueError, match="FUTURE_PROPOSAL_CREATION"):
+        record(observation_inputs, tmp_path / "future-proposal", at(21, 10))
+    assert not (tmp_path / "future-proposal").exists()
