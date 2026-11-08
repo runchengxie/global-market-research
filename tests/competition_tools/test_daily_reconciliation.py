@@ -224,3 +224,33 @@ def test_future_execution_date_in_sealed_report_is_rejected(case, tmp_path):
     with pytest.raises(ValueError):  # Existing snapshot/period gates reject this first.
         run(case, tmp_path / "bad")
     assert not (tmp_path / "bad").exists()
+
+
+def test_execution_after_receipt_but_before_run_time_rejected(case, tmp_path):
+    from pathlib import Path
+    from competition_tools.competition_review.flex_reconciliation import (
+        reconcile_snapshot,
+    )
+
+    root = Path(case[1]["snapshot_root"])
+    row = '<Trades><Trade accountId="SYNTH" levelOfDetail="EXECUTION" tradeID="late" tradeDate="20261108" transactionType="ExchTrade" quantity="1" buySell="BUY" conid="1" symbol="A" assetCategory="STK" currency="USD"/></Trades>'
+    raw = (
+        (root / "report.xml")
+        .read_text()
+        .replace('toDate="20261106"', 'toDate="20261108"', 1)
+        .replace("</FlexStatement>", row + "</FlexStatement>")
+    )
+    (root / "report.xml").write_text(raw)
+    snapshot = reconcile_snapshot(
+        raw.encode(), expected_account="SYNTH", base_currency="USD", account_ref="paper"
+    )
+    assert snapshot["status"] == "reconciled_stock_cash"
+    (root / "snapshot.json").write_text(json.dumps(snapshot))
+    receipt = json.loads((root / "receipt.json").read_text())
+    receipt["report_sha256"] = digest(root / "report.xml")
+    (root / "receipt.json").write_text(json.dumps(receipt))
+    (root / "seal.json").unlink()
+    seal(root)
+    with pytest.raises(ValueError, match="BROKER_DATE_AFTER_RECEIPT"):
+        run(case, tmp_path / "bad")
+    assert not (tmp_path / "bad").exists()

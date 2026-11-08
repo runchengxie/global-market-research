@@ -81,6 +81,12 @@ def run(declaration_root, snapshot_root, output, *, statement_bundle=None, now=N
         for day in set(counts) | {r["report_date"] for r in ledger["reported_nav"]}
     ):
         raise ValueError("FUTURE_BROKER_DATE")
+    received = aware(read_json(snapshot_root / "receipt.json")["finished_at"])
+    if any(
+        day > received.date().isoformat()
+        for day in set(counts) | {r["report_date"] for r in ledger["reported_nav"]}
+    ):
+        raise ValueError("BROKER_DATE_AFTER_RECEIPT")
     statement = None
     inputs = [declaration_root, snapshot_root]
     if statement_bundle is not None:
