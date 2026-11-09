@@ -34,3 +34,5 @@
 - [加密后续探索：前瞻验收与参数接近的LSTM/MoE对照](research/crypto-followup.zh-CN.md)
 
 - [MoE/LSTM 动态架构讲解](research/moe-architecture.zh-CN.md)
+
+- [跨资产配置与加密货币仓位](research/multiasset-crypto.zh-CN.md)
