@@ -33,3 +33,5 @@ The rules summary and dated validation reports record what was checked at the ti
 - [Crypto follow-up: audited forward records and matched LSTM/MoE comparison](research/crypto-followup.md)
 
 - [MoE/LSTM interactive architecture guide](research/moe-architecture.md)
+
+- [Multi-asset allocation and crypto sleeves](research/multiasset-crypto.md)
