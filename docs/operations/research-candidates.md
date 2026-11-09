@@ -54,3 +54,5 @@ At cutoff, unresolved binding stays unverified. Follow the organizer process for
 Audit whether existing owner datasets actually include the chosen core, required adjusted history, dividends and base FX. A fixed ten-stock snapshot cannot be assumed to cover a held ETF. For crypto sentiment, provider-owned formula/version, first publication, revision policy and retrieval/raw hashes remain required; new first-seen receipts cannot retroactively establish historical availability. Preserve the frozen price-only forward producer. For MoE, reuse the deferred objective study and its six data/holdout evidence classes; no new architecture fits are justified by the proposal alone. Keep all three lanes separate from executable competition handoff.
 
 For actual retained-byte calculations and their limits, see [ETF historical rehearsal](etf-rehearsal.md).
+
+For a common-ledger retrospective baseline comparison with unavailable-model rows preserved, see [baseline decisions](baseline-decision.md).
