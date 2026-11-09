@@ -66,3 +66,9 @@
 [日频历史对比研究](../../docs/research/real-data-study.zh-CN.md)
 
 序列模型：[LSTM/MoE 实验协议](../../docs/research/lstm-moe.zh-CN.md)。
+
+## 静态分散组合
+
+`python -m equity_lab.backtest.static_allocation --input panel.json --protocol protocol.json --output new-result.json`
+
+离线诊断复用现金支付费用的调仓机制，比较仅建仓与退出、月度调仓、根据前一收盘仓位偏差调仓。参见[输入约定与限制](docs/static-allocation.zh-CN.md)。工具保留全部配置和逐日账本，不覆盖已有输出；不生成交易目标，也不验证真实账户业绩。

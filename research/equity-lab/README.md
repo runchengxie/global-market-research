@@ -75,3 +75,9 @@ The opt-in [research acceptance tools](../../docs/research/research-acceptance.m
 [Retrospective daily study](../../docs/research/real-data-study.md)
 
 Sequence models: [LSTM/MoE protocol](../../docs/research/lstm-moe.md).
+
+## Static diversified sleeves
+
+`python -m equity_lab.backtest.static_allocation --input panel.json --protocol protocol.json --output new-result.json`
+
+The offline diagnostic reuses the cash-funded rebalance primitive for entry/exit-only, monthly and previous-close drift policies. See the [input contract and limitations](docs/static-allocation.md). It writes all requested cases and daily ledgers without replacing an existing output. It does not produce execution targets or validate real account performance.

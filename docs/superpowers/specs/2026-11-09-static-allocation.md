@@ -1,0 +1,11 @@
+# Static allocation diagnostic
+
+Research question: does adding one risk source improve the stock/cash reference, and does rebalancing help after costs? No account targets or execution integration.
+
+Use the existing equity-lab cash-funded fractional-unit rebalance primitive. Add an offline backtest module and file-based CLI; root never imports leaf code. Input is a complete, strictly ordered common-session panel of adjusted opening and closing price-unit proxies. Both marks must use the same daily adjustment factor. Do not forward-fill gaps. Caller must verify sessions against the exchange calendar and retain acquisition receipts. Adjusted units incorporate distributions retrospectively; they are not executable shares, dated dividend cash, corporate-action acceptance or independent-source verification.
+
+Freeze the external protocol before acquiring new asset history: one stock/cash reference and two arms that each replace some cash with one distinct risk source, retaining the same stock target. Keep identifiers, dates and experiment weights in the external protocol, not public Git. Policies: entry/exit only, first common session of month, previous close weight drift at a frozen threshold in any invested sleeve or cash. Drift decisions use prior close only and execute next open without using that opening mark to decide. Month boundaries may use the known calendar. Entry always executes; terminal liquidation charged. Fees cover the complete 0/10/25bp diagnostic matrix. Cash USD, zero yield; no taxes, borrowing, integer lots or account FX.
+
+No weight search or winner promotion. Report every case, continuous path and calendar-year subperiod returns (partial years explicit), initial-capital drawdown, volatility, actual average stock exposure and cash, turnover and costs. Same target stock weight is not same realized stock exposure or total risk. Cash-only residual is not actual SGD interest. Keep full ledger and source hashes; never overwrite outputs. Missing sources/sessions block the study.
+
+Actual account lane: reuse the existing sealed reported NAV bridge and snapshot, explicitly keep MTM/FX inseparable, booked interest and accrual separate, do not add cash transactions again. Record gaps rather than claim price/FX attribution complete. Crypto stays independent.
