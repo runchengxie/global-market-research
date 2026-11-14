@@ -115,3 +115,90 @@ def test_config_consumers_use_external_data_without_local_link(tmp_path):
     assert result.stdout.splitlines() == [
         str(data / "global-market-research" / "research" / "crypto-mm" / "raw_data"), "9"
     ]
+
+
+def test_roots_table_data_root_is_accepted(tmp_path, monkeypatch):
+    config = tmp_path / "workspace.toml"
+    config.write_text(
+        "[roots]\n"
+        f'DATA_ROOT = "{tmp_path.as_posix()}"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("WORKSPACE_CONFIG", str(config))
+    assert load_data_root() == tmp_path / "global-market-research" / "research" / "crypto-mm" / "raw_data"
+
+
+def test_flat_uppercase_data_root_is_accepted(tmp_path, monkeypatch):
+    config = tmp_path / "workspace.toml"
+    config.write_text(f'DATA_ROOT = "{tmp_path.as_posix()}"\n', encoding="utf-8")
+    monkeypatch.setenv("WORKSPACE_CONFIG", str(config))
+    assert load_data_root() == tmp_path / "global-market-research" / "research" / "crypto-mm" / "raw_data"
+
+
+def test_matching_data_root_aliases_are_accepted(tmp_path, monkeypatch):
+    config = tmp_path / "workspace.toml"
+    config.write_text(
+        f'data_root = "{tmp_path.as_posix()}"\n'
+        f'DATA_ROOT = "{tmp_path.as_posix()}"\n'
+        "[roots]\n"
+        f'DATA_ROOT = "{tmp_path.as_posix()}"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("WORKSPACE_CONFIG", str(config))
+    assert load_data_root() == tmp_path / "global-market-research" / "research" / "crypto-mm" / "raw_data"
+
+
+def test_conflicting_data_root_aliases_are_rejected(tmp_path, monkeypatch):
+    other = tmp_path / "other"
+    config = tmp_path / "workspace.toml"
+    config.write_text(
+        f'data_root = "{tmp_path.as_posix()}"\n'
+        f'DATA_ROOT = "{other.as_posix()}"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("WORKSPACE_CONFIG", str(config))
+    with pytest.raises(ValueError, match="Conflicting data_root"):
+        load_data_root()
+
+
+def test_conflicting_roots_and_flat_data_root_are_rejected(tmp_path, monkeypatch):
+    other = tmp_path / "other"
+    config = tmp_path / "workspace.toml"
+    config.write_text(
+        f'DATA_ROOT = "{tmp_path.as_posix()}"\n'
+        "[roots]\n"
+        f'DATA_ROOT = "{other.as_posix()}"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("WORKSPACE_CONFIG", str(config))
+    with pytest.raises(ValueError, match="Conflicting data_root"):
+        load_data_root()
+
+
+def test_invalid_roots_table_is_rejected(tmp_path, monkeypatch):
+    config = tmp_path / "workspace.toml"
+    config.write_text('roots = "nope"\n', encoding="utf-8")
+    monkeypatch.setenv("WORKSPACE_CONFIG", str(config))
+    with pytest.raises(ValueError, match="Workspace roots must be a table"):
+        load_data_root()
+
+
+def test_account_config_is_used_when_competition_default_is_absent(tmp_path, monkeypatch):
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    config = tmp_path / ".config" / tmp_path.name / "shared" / "workspace.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(f'data_root = "{tmp_path.as_posix()}"\n', encoding="utf-8")
+    assert load_data_root() == tmp_path / "global-market-research" / "research" / "crypto-mm" / "raw_data"
+
+
+def test_competition_default_is_preferred_over_account_config(tmp_path, monkeypatch):
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    chosen = tmp_path / "chosen"
+    ignored = tmp_path / "ignored"
+    competition = tmp_path / ".config" / "quant-competition" / "shared" / "workspace.toml"
+    account = tmp_path / ".config" / tmp_path.name / "shared" / "workspace.toml"
+    competition.parent.mkdir(parents=True)
+    account.parent.mkdir(parents=True)
+    competition.write_text(f'data_root = "{chosen.as_posix()}"\n', encoding="utf-8")
+    account.write_text(f'data_root = "{ignored.as_posix()}"\n', encoding="utf-8")
+    assert load_data_root() == chosen / "global-market-research" / "research" / "crypto-mm" / "raw_data"
