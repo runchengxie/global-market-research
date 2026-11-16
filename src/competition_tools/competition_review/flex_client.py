@@ -12,7 +12,7 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from competition_tools.crypto_evidence import read_json
-from competition_tools.datasets.daily_storage import safe_path
+from competition_tools.datasets.dex_spec import safe_path
 
 BASE = "https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService"
 MAX_BYTES = 16 * 1024 * 1024

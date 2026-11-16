@@ -4,7 +4,7 @@
 
 Flex retrieves a saved reporting query with its Current Token and Query ID. It does not need TWS/Gateway or a brokerage login for each retrieval. It returns statement data, not real-time position updates. [IBKR configuration](https://www.interactivebrokers.com/docs/web-api/flex-web-service/client-portal-configuration)
 
-Create one private JSON file under `CONFIG_ROOT/projects/global-market-research/ibkr-flex.json`, outside Git. Keep it owner-private (0600 on POSIX; equivalent owner ACL on Windows):
+Create one private JSON file under `CONFIG_ROOT/projects/global-market-research/ibkr-flex.json`, outside Git. Keep it owner-private (0600 on POSIX; equivalent owner ACL on Windows). An empty ancestor `.git` directory is treated as a non-repository placeholder; nonempty Git directories and Git files remain blocked, as do symlinks in the credential path:
 
 ```json
 {

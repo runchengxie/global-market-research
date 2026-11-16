@@ -45,7 +45,16 @@ def collect(
     config = load_config(config_file)
     if not discover and not config.expected_account:
         raise FlexError("FLEX_ACCOUNT_BINDING_REQUIRED")
-    inputs = [Path(config_file)]
+    # load_config already validates this private credential path. Data-input
+    # validation has a stricter marker policy and must not reclassify a valid
+    # credential beneath an empty non-repository .git placeholder.
+    credential_path = Path(config_file).expanduser().resolve()
+    output_path = Path(output).expanduser().resolve()
+    if output_path.is_relative_to(credential_path) or credential_path.is_relative_to(
+        output_path
+    ):
+        raise FlexError("FLEX_OUTPUT_OVERLAPS_CONFIG")
+    inputs = []
     if report_file:
         report_file = safe_path(Path(report_file))
         inputs.append(report_file)

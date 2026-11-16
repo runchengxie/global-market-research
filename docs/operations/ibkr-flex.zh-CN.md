@@ -18,6 +18,8 @@ Flex 用 Current Token 和 Query ID 读取预先保存的报表查询，每次�
 
 Token 和 Query ID 按字符串填写，保留引号。`account_ref` 为报告代号。账户尚未填写时可以先发现报表元数据；正式采集需要明确的完整预期账户。本位币可在来源元数据确认前留空；未知币种保持未知，不会自动换汇或生成净值权重。配置后，账户或币种不匹配会阻塞采集。工具不生成/重置 Token，也不修改查询模板；关联账户范围取决于 Query 的账户选择。[Token 范围说明](https://www.interactivebrokers.com/docs/web-api/flex-web-service/client-portal-configuration/enable-and-create-access-token)
 
+路径检查把祖先目录中空的 `.git` 目录视为非仓库占位；非空 Git 目录和 Git 文件仍会阻断，凭据路径中的符号链接也仍会拒绝。配置文件的仅属主权限要求不变。
+
 ## 配置报表
 
 使用 **Activity Flex Query，输出 XML**。持仓需要 Open Positions 的 **Summary** 明细，包含 Account ID、Report Date、Symbol/Conid、Currency、Quantity、Mark Price、Position Value、Multiplier、FX Rate to Base。Account Information 只需账户 ID 和本位币 Currency。对账还需 Trades、Cash Transactions、NAV Summary in Base；Corporate Actions、现金余额和换汇记录有助于完整复核。字段和账户在 Client Portal 中选择，CLI 不编辑查询。
