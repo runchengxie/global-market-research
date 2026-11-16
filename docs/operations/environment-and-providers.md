@@ -25,6 +25,10 @@ Each call tries the primary key first. HTTP 401, 403 or 429, or JSON business co
 
 The client does not automatically load `.env` or select indicator endpoints. The [official API overview](https://cryptoracle.gitbook.io/cryptoracle-docs/cryptoracle-open-api-v2.1) specifies the `/openapi` root, and the [authentication documentation](https://cryptoracle.gitbook.io/cryptoracle-docs/cryptoracle-open-api-v2.1/authentication) specifies the `X-API-KEY` header. The [2026-10-12 validation](cryptoracle-validation-2026-10-12.md) confirms backup-key token discovery through both the configured proxy and direct networking, and invalid-key failover. Indicator/history entitlements and coverage remain unverified.
 
+## Nodit
+
+Use the [bounded manual collector](nodit.md) for Ethereum daily active-account and transaction counts. Store `NODIT_API_KEY` in the existing private project `.env` and pass its path explicitly. Competition-granted limits may be unknown; runs have local request/CU/time caps, without retries or scheduling. This source does not supply equity PIT fundamentals.
+
 ## Other providers
 
 QuantZone is optional: fill both `QUANTZONE_ACCESS_KEY` and `QUANTZONE_SECRET_KEY` in your local `.env` when access is available. The SDK requires `access_key` and `sign_secret` respectively; a single `QUANTZONE_API_KEY` is insufficient. `QUANTZONE_API_BASE_URL` records the candidate service URL; no QuantZone adapter or authentication flow is implemented yet. These entries do not validate account entitlement or factor coverage.

@@ -30,6 +30,10 @@ data = client.post("/v2.1/coin/list", {"timeType": "1h"})
 
 客户端不会自动加载 `.env`，也不会自动选择指标接口。[官方 API 概览](https://cryptoracle.gitbook.io/cryptoracle-docs/cryptoracle-open-api-v2.1)说明了 `/openapi` 根路径，[认证文档](https://cryptoracle.gitbook.io/cryptoracle-docs/cryptoracle-open-api-v2.1/authentication)说明了 `X-API-KEY` 请求头。[2026-10-12 验证记录](cryptoracle-validation-2026-10-12.md)记录了通过已配置代理及直连进行只读币种查询、无效主密钥切换的结果。指标、历史数据权限和覆盖范围尚未验证。
 
+## Nodit
+
+以太坊每日活跃账户数和交易笔数可使用[有预算上限的手动采集器](nodit.zh-CN.md)。将 `NODIT_API_KEY` 保存在现有私人项目 `.env`，显式提供路径。比赛赠送额度可能未知；每次采集限制请求数、估算 CU 和时间，不重试、不安装调度。该来源不提供股票 PIT 基本面。
+
 ## QuantZone
 
 QuantZone 是可选来源。有权限时，在私人 `.env` 中同时填写 `QUANTZONE_ACCESS_KEY` 和 `QUANTZONE_SECRET_KEY`。SDK 分别使用 `access_key` 和 `sign_secret`，只填一个 `QUANTZONE_API_KEY` 不够。
