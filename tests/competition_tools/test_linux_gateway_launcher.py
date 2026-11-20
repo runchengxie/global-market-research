@@ -190,3 +190,14 @@ def test_writable_ancestor_rejected(config, kind):
         (Path(config[1]["gateway_directory"]) / "jars").chmod(0o777)
     with pytest.raises(lg.LaunchError, match="UNSAFE_ANCESTOR"):
         check(config)
+
+
+def test_only_empty_git_placeholder_is_allowed(config):
+    config, _ = config
+    deployment = config.parent
+    marker = deployment.parent / ".git"
+    marker.mkdir()
+    assert lg.checked_path(str(config), private=True) == config
+    (marker / "HEAD").write_text("ref: refs/heads/main\n")
+    with pytest.raises(lg.LaunchError, match="PATH_IN_SOURCE"):
+        lg.checked_path(str(config), private=True)

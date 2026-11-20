@@ -45,7 +45,11 @@ def checked_path(value, *, private=False, directory=False):
                 parent_info.st_mode & 0o022 and not trusted_sticky
             ):
                 fail("UNSAFE_ANCESTOR")
-        if (ancestor / ".git").exists() or ancestor.name == ".git":
+        marker = ancestor / ".git"
+        if ancestor.name == ".git" or marker.is_symlink():
+            fail("PATH_IN_SOURCE")
+        # An empty directory is not a Git repository or worktree marker.
+        if marker.exists() and (not marker.is_dir() or any(marker.iterdir())):
             fail("PATH_IN_SOURCE")
     info = path.stat()
     if info.st_uid != os.getuid():
